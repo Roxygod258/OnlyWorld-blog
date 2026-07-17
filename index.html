@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#eaf7fc" />
+    <meta
+      name="description"
+      content="OnlyWorld 的网络安全与 Pwn 学习记录"
+    />
+    <title>OnlyWorld · Personal Blog</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="splash-active">
+    <section class="welcome-screen" id="welcomeScreen" aria-labelledby="welcomeTitle">
+      <canvas class="welcome-canvas" id="welcomeCanvas" aria-hidden="true"></canvas>
+      <div class="welcome-index" aria-hidden="true">
+        <span>ONLYWORLD</span>
+        <span>PERSONAL BLOG</span>
+        <span>LEARNING · LIFE</span>
+      </div>
+      <button
+        class="welcome-edit-button"
+        id="welcomeEditButton"
+        type="button"
+        aria-label="编辑欢迎页文字"
+        title="编辑欢迎页文字"
+      >✎</button>
+      <div class="welcome-content">
+        <p class="welcome-kicker" id="welcomeKicker">WELCOME TO MY PERSONAL BLOG</p>
+        <h1 id="welcomeTitle">OnlyWorld</h1>
+        <p class="welcome-subtitle" id="welcomeSubtitle">在二进制世界里，记录每一次理解与突破。</p>
+        <button class="enter-button" id="enterSite" type="button">
+          <span id="enterButtonText">进入学习记录</span>
+          <span aria-hidden="true">→</span>
+        </button>
+      </div>
+      <div class="welcome-status" aria-hidden="true">
+        <span class="welcome-pulse"></span>
+        <span>OPEN JOURNAL</span>
+      </div>
+    </section>
+
+    <div class="backdrop" aria-hidden="true"></div>
+    <div class="wallpaper wallpaper-main" aria-hidden="true"></div>
+    <div class="backdrop-shade" aria-hidden="true"></div>
+
+    <div class="site-shell">
+      <header class="topbar">
+        <div class="reading-progress" id="readingProgress" aria-hidden="true"></div>
+        <time class="live-clock" id="liveClock" aria-label="当前时间">00:00:00</time>
+        <button
+          class="icon-button mobile-only"
+          id="menuButton"
+          type="button"
+          aria-label="打开目录"
+          title="打开目录"
+        >
+          <span aria-hidden="true">☰</span>
+        </button>
+
+        <div class="brand">
+          <button class="brand-mark avatar-button" type="button" data-route="profile" aria-label="查看 OnlyWorld 个人主页" title="个人主页">O</button>
+          <button class="brand-copy" type="button" data-route="home" aria-label="返回首页">
+            <strong>OnlyWorld</strong>
+            <small>PERSONAL BLOG</small>
+          </button>
+        </div>
+
+        <nav class="top-nav" aria-label="网站导航">
+          <button class="top-nav-item is-active" type="button" data-route="home">首页</button>
+          <button class="top-nav-item" type="button" data-route="articles">文章</button>
+          <button class="top-nav-item" type="button" data-route="thoughts">杂谈</button>
+          <button class="top-nav-item" type="button" data-route="photos">照片</button>
+          <button class="top-nav-item" type="button" data-route="music">音乐</button>
+          <button class="top-nav-item" type="button" data-route="archive">归档</button>
+        </nav>
+
+        <div class="topbar-actions">
+          <label class="search-field" for="searchInput">
+            <span aria-hidden="true">⌕</span>
+            <input id="searchInput" type="search" placeholder="搜索笔记" autocomplete="off" />
+          </label>
+          <button
+            class="icon-button"
+            id="editWelcomeButton"
+            type="button"
+            aria-label="编辑欢迎页文字"
+            title="编辑欢迎页文字"
+          >
+            <span aria-hidden="true">✎</span>
+          </button>
+          <button
+            class="icon-button"
+            id="returnWelcomeButton"
+            type="button"
+            aria-label="返回欢迎界面"
+            title="返回欢迎界面"
+          >
+            <span aria-hidden="true">↶</span>
+          </button>
+          <button
+            class="icon-button"
+            id="backgroundButton"
+            type="button"
+            aria-label="背景设置"
+            title="背景设置"
+          >
+            <span aria-hidden="true">◐</span>
+          </button>
+        </div>
+      </header>
+
+      <aside class="sidebar" id="sidebar" aria-label="笔记目录">
+        <div class="sidebar-head">
+          <p class="eyebrow">文章目录</p>
+          <button
+            class="icon-button mobile-only"
+            id="closeMenuButton"
+            type="button"
+            aria-label="关闭目录"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+
+        <div class="directory-section">
+          <div class="section-label">
+            <span>PWN 目录</span>
+            <span id="noteCount">0</span>
+          </div>
+          <div class="directory" id="directory"></div>
+          <div class="section-label thoughts-label">
+            <span>杂谈目录</span>
+            <span id="thoughtCount">0</span>
+          </div>
+          <div class="directory" id="thoughtsDirectory"></div>
+        </div>
+
+        <footer class="sidebar-footer">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>持续记录中</span>
+        </footer>
+      </aside>
+
+      <main class="content" id="content" tabindex="-1"></main>
+    </div>
+
+    <div class="scrim" id="scrim" hidden></div>
+
+    <dialog class="settings-dialog" id="settingsDialog">
+      <form method="dialog">
+        <header class="dialog-head">
+          <div>
+            <p class="eyebrow">APPEARANCE</p>
+          <h2>外观设置</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="关闭设置" title="关闭">
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+
+        <div class="settings-body">
+          <div class="wallpaper-option">
+            <div class="background-preview" id="backgroundPreview" aria-hidden="true"></div>
+            <label class="file-button" for="backgroundInput">
+              <span aria-hidden="true">＋</span>
+              <span>选择整页壁纸</span>
+            </label>
+            <input id="backgroundInput" type="file" accept="image/*" hidden />
+          </div>
+
+          <label class="range-control">
+            <span>遮罩强度 <output id="shadeValue">64%</output></span>
+            <input id="shadeInput" type="range" min="10" max="72" value="32" />
+          </label>
+
+          <label class="range-control">
+            <span>背景柔化 <output id="blurValue">0px</output></span>
+            <input id="blurInput" type="range" min="0" max="16" value="0" />
+          </label>
+
+          <label class="range-control">
+            <span>内容不透明度 <output id="contentOpacityValue">70%</output></span>
+            <input id="contentOpacityInput" type="range" min="38" max="100" value="70" />
+          </label>
+
+          <label class="range-control">
+            <span>导航不透明度 <output id="navOpacityValue">88%</output></span>
+            <input id="navOpacityInput" type="range" min="45" max="100" value="88" />
+          </label>
+        </div>
+
+        <footer class="dialog-actions">
+          <button class="text-button secondary" id="resetBackground" type="button">恢复默认</button>
+          <button class="text-button primary" value="default">完成</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="settings-dialog welcome-editor" id="welcomeEditorDialog">
+      <form method="dialog" id="welcomeEditorForm">
+        <header class="dialog-head">
+          <div>
+            <p class="eyebrow">WELCOME COPY</p>
+            <h2>欢迎页文字</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="关闭编辑" title="关闭">
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+
+        <div class="settings-body">
+          <label class="text-control">
+            <span>上方短句</span>
+            <input id="welcomeKickerInput" type="text" maxlength="60" />
+          </label>
+          <label class="text-control">
+            <span>主标题</span>
+            <input id="welcomeTitleInput" type="text" maxlength="24" />
+          </label>
+          <label class="text-control">
+            <span>欢迎语</span>
+            <textarea id="welcomeSubtitleInput" rows="3" maxlength="120"></textarea>
+          </label>
+          <label class="text-control">
+            <span>进入按钮</span>
+            <input id="enterButtonInput" type="text" maxlength="18" />
+          </label>
+        </div>
+
+        <footer class="dialog-actions">
+          <button class="text-button secondary" id="resetWelcomeCopy" type="button">恢复默认</button>
+          <button class="text-button primary" id="saveWelcomeCopy" value="default">保存</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="settings-dialog profile-editor" id="profileEditorDialog">
+      <form method="dialog" id="profileEditorForm">
+        <header class="dialog-head">
+          <div>
+            <p class="eyebrow">PROFILE</p>
+            <h2>编辑个人资料</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="关闭个人资料编辑" title="关闭">
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+
+        <div class="settings-body">
+          <div class="avatar-editor">
+            <div class="profile-avatar editor-avatar" id="profileAvatarPreview" aria-hidden="true">OW</div>
+            <div>
+              <label class="file-button" for="profileAvatarInput">
+                <span aria-hidden="true">＋</span>
+                <span>选择头像</span>
+              </label>
+              <input id="profileAvatarInput" type="file" accept="image/*" hidden />
+              <button class="small-text-button" id="removeProfileAvatar" type="button">移除头像</button>
+            </div>
+          </div>
+
+          <label class="text-control">
+            <span>个人主页标题</span>
+            <input id="profileGreetingInput" type="text" maxlength="50" />
+          </label>
+          <label class="text-control">
+            <span>个人简介</span>
+            <textarea id="profileBioInput" rows="4" maxlength="320"></textarea>
+          </label>
+          <div class="two-column-fields">
+            <label class="text-control">
+              <span>邮箱</span>
+              <input id="profileEmailInput" type="email" maxlength="100" placeholder="name@example.com" />
+            </label>
+            <label class="text-control">
+              <span>GitHub 用户名</span>
+              <input id="profileGithubInput" type="text" maxlength="60" placeholder="OnlyWorld" />
+            </label>
+          </div>
+          <div class="two-column-fields">
+            <label class="text-control">
+              <span>当前方向</span>
+              <input id="profileDirectionInput" type="text" maxlength="40" />
+            </label>
+            <label class="text-control">
+              <span>记录主题</span>
+              <input id="profileTopicsInput" type="text" maxlength="40" />
+            </label>
+          </div>
+          <label class="text-control">
+            <span>学习状态</span>
+            <input id="profileStatusInput" type="text" maxlength="40" />
+          </label>
+        </div>
+
+        <footer class="dialog-actions">
+          <button class="text-button secondary" id="resetProfile" type="button">恢复默认</button>
+          <button class="text-button primary" id="saveProfile" value="default">保存</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <noscript>此网站需要启用 JavaScript 才能浏览笔记。</noscript>
+    <script src="site-content.js"></script>
+    <script src="site-posts.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
