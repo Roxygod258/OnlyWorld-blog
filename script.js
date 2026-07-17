@@ -88,7 +88,7 @@ const thoughts = window.ONLYWORLD_POSTS?.thoughts || [
     summary: "记录不只是保存答案，也是保留自己如何一步步理解问题的过程。",
     readTime: "3 分钟",
     content: `
-      <p>很多知识在第一次理解时似乎很清楚，隔一段时间再回头，却只剩下模糊的结论。真正值得保存的，往往不是最后那一句答案，而是从困惑到理解之间的路径。</p>
+      <p>很多知识在第一次理解时似乎很清楚，隔一段时间再回头，却只剩下模糊的结论。真正值得保存的，是我被过往牵住的时光</p>
       <h2>留下思考的过程</h2>
       <p>我希望这里不仅有整理好的技术笔记，也能留下遇到问题时的判断、走过的弯路，以及一些暂时没有标准答案的想法。</p>
       <div class="callout"><strong>给自己的提醒</strong><p>记录可以不完整，但要真实；观点可以改变，但要保留改变发生的原因。</p></div>
@@ -112,6 +112,17 @@ const thoughts = window.ONLYWORLD_POSTS?.thoughts || [
 
 const configuredContent = window.ONLYWORLD_CONTENT || {};
 
+const appearanceDefaults = {
+  wallpaper: "",
+  shade: 32,
+  blur: 0,
+  contentOpacity: 70,
+  navOpacity: 88,
+  musicVolume: 80,
+  sakura: true,
+  ...(configuredContent.appearance || {}),
+};
+
 const welcomeDefaults = {
   kicker: "WELCOME TO MY PERSONAL BLOG",
   title: "OnlyWorld",
@@ -128,6 +139,7 @@ const profileContent = {
   topics: "安全与思考",
   status: "持续进行中",
   email: "",
+  birthday: "7.21",
   github: "",
   website: "学习区保存技术笔记与实验复盘，杂谈区记录技术之外的观察。",
   belief: "真正的理解来自不断提问、亲手验证和坦诚复盘。",
@@ -141,6 +153,7 @@ const elements = {
   welcomeCanvas: document.querySelector("#welcomeCanvas"),
   enterSite: document.querySelector("#enterSite"),
   content: document.querySelector("#content"),
+  musicAudio: document.querySelector("#musicAudio"),
   directory: document.querySelector("#directory"),
   noteCount: document.querySelector("#noteCount"),
   thoughtsDirectory: document.querySelector("#thoughtsDirectory"),
@@ -148,10 +161,9 @@ const elements = {
   searchInput: document.querySelector("#searchInput"),
   sidebar: document.querySelector("#sidebar"),
   scrim: document.querySelector("#scrim"),
-  settingsDialog: document.querySelector("#settingsDialog"),
-  backgroundInput: document.querySelector("#backgroundInput"),
-  backgroundPreview: document.querySelector("#backgroundPreview"),
   wallpaper: document.querySelector(".wallpaper-main"),
+  sakuraCanvas: document.querySelector("#sakuraCanvas"),
+  brandAvatar: document.querySelector("#brandAvatar"),
   readingProgress: document.querySelector("#readingProgress"),
   liveClock: document.querySelector("#liveClock"),
   welcomeKicker: document.querySelector("#welcomeKicker"),
@@ -171,18 +183,11 @@ const elements = {
   profileGreetingInput: document.querySelector("#profileGreetingInput"),
   profileBioInput: document.querySelector("#profileBioInput"),
   profileEmailInput: document.querySelector("#profileEmailInput"),
+  profileBirthdayInput: document.querySelector("#profileBirthdayInput"),
   profileGithubInput: document.querySelector("#profileGithubInput"),
   profileDirectionInput: document.querySelector("#profileDirectionInput"),
   profileTopicsInput: document.querySelector("#profileTopicsInput"),
   profileStatusInput: document.querySelector("#profileStatusInput"),
-  shadeInput: document.querySelector("#shadeInput"),
-  shadeValue: document.querySelector("#shadeValue"),
-  blurInput: document.querySelector("#blurInput"),
-  blurValue: document.querySelector("#blurValue"),
-  contentOpacityInput: document.querySelector("#contentOpacityInput"),
-  contentOpacityValue: document.querySelector("#contentOpacityValue"),
-  navOpacityInput: document.querySelector("#navOpacityInput"),
-  navOpacityValue: document.querySelector("#navOpacityValue"),
 };
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
@@ -249,14 +254,14 @@ function renderHome() {
     <section class="home-view">
       <div class="home-intro">
         <div>
-          <p class="eyebrow">ONLYWORLD / PERSONAL BLOG</p>
-          <h1>在二进制世界里，<br /><em>追踪每一个细节。</em></h1>
-          <p class="lead">记录网络安全与 Pwn 学习过程中的概念、实验和复盘。把零散的问题整理成可以反复查阅的知识路径。</p>
+          <p class="eyebrow">ONLYWORLD / MY LITTLE WORLD</p>
+          <h1>只是在想，<br /><em>有在做些事。</em></h1>
+          <p class="lead">因为记性太差了，所以想在这里写下一些感兴趣的东西</p>
         </div>
         <div class="focus-panel">
           <span>CURRENT FOCUS</span>
-          <strong>Binary Pwn</strong>
-          <small>栈 · ELF · 漏洞利用</small>
+          <strong>Probably Anything</strong>
+          <small>（不要在意）</small>
         </div>
       </div>
 
@@ -285,7 +290,7 @@ function renderArticles() {
           <p class="eyebrow">LEARNING NOTES</p>
           <h1>文章</h1>
         </div>
-        <p>网络安全、Pwn 与持续学习过程中的整理和复盘。</p>
+        <p>持续学习过程中的整理和复盘。</p>
       </header>
       <div class="note-list">${notes.map(noteRow).join("")}</div>
     </section>
@@ -379,19 +384,74 @@ function renderPhotos() {
   focusContent();
 }
 
-function getNeteasePlaylistId() {
-  const localValue = localStorage.getItem("onlyworld-netease-playlist");
-  const configuredValue = configuredContent.music?.neteasePlaylistId || "";
-  return String(localValue ?? configuredValue).replace(/\D/g, "");
+function safeAudioSource(value) {
+  const source = String(value || "").trim();
+  return /^(data:audio\/|https?:\/\/|assets\/|\.\/|\.\.\/)/i.test(source) ? source : "";
+}
+
+function getMusicVolumePercent() {
+  const savedValue = localStorage.getItem("onlyworld-music-volume");
+  const value = savedValue === null ? appearanceDefaults.musicVolume : savedValue;
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(100, Math.max(0, number)) : 80;
+}
+
+function formatPlaybackTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return "00:00";
+  const minutes = Math.floor(seconds / 60);
+  const remainder = Math.floor(seconds % 60);
+  return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+}
+
+function updateMusicPlayerUi(audio) {
+  const playButton = document.querySelector('[data-action="music-toggle"]');
+  const player = document.querySelector(".single-track-player");
+  const progress = document.querySelector("#musicProgress");
+  const currentTime = document.querySelector("#musicCurrentTime");
+  const duration = document.querySelector("#musicDuration");
+  const status = document.querySelector("#musicStatus");
+  if (!playButton || !player || !progress || !currentTime || !duration || !status) return;
+  playButton.textContent = audio.paused ? "▶" : "Ⅱ";
+  playButton.setAttribute("aria-label", audio.paused ? "播放" : "暂停");
+  player.classList.toggle("is-playing", !audio.paused);
+  progress.max = Number.isFinite(audio.duration) ? audio.duration : 0;
+  progress.value = audio.currentTime || 0;
+  currentTime.textContent = formatPlaybackTime(audio.currentTime);
+  duration.textContent = formatPlaybackTime(audio.duration);
+  if (audio.error) status.textContent = "音频加载失败，请检查歌曲路径";
+  else status.textContent = audio.paused ? "已暂停 · 单曲循环" : "正在播放 · 单曲循环";
+}
+
+function initializeMusicAudio() {
+  const audio = elements.musicAudio;
+  audio.loop = true;
+  audio.volume = getMusicVolumePercent() / 100;
+  ["play", "pause", "timeupdate", "loadedmetadata", "durationchange", "error"].forEach((eventName) => {
+    audio.addEventListener(eventName, () => updateMusicPlayerUi(audio));
+  });
+}
+
+function configureMusicSource(source) {
+  const audio = elements.musicAudio;
+  if (source && audio.getAttribute("src") !== source) {
+    audio.setAttribute("src", source);
+    audio.load();
+  } else if (!source && audio.getAttribute("src")) {
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+  }
 }
 
 function renderMusic() {
-  const playlistId = getNeteasePlaylistId();
-  const playlistTitle = configuredContent.music?.title || "我的歌单";
-  const player = playlistId
-    ? `<iframe title="${escapeHtml(playlistTitle)}" src="https://music.163.com/outchain/player?type=0&id=${playlistId}&auto=0&height=430" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-       <a class="music-external" href="https://music.163.com/#/playlist?id=${playlistId}" target="_blank" rel="noreferrer">在网易云音乐打开</a>`
-    : '<div class="music-empty"><span>尚未设置网易云歌单</span></div>';
+  const title = String(configuredContent.music?.title || "我的单曲").trim();
+  const artist = String(configuredContent.music?.artist || "未知歌手").trim();
+  const source = safeAudioSource(configuredContent.music?.src);
+  const coverSource = safeAvatarSource(configuredContent.music?.cover);
+  const cover = coverSource
+    ? `<img src="${escapeHtml(coverSource)}" alt="${escapeHtml(title)} 封面" />`
+    : '<span aria-hidden="true">♪</span>';
+  configureMusicSource(source);
 
   setActiveRoute("music");
   renderDirectory();
@@ -399,19 +459,37 @@ function renderMusic() {
     <section class="music-view">
       <header class="page-header">
         <div>
-          <p class="eyebrow">NOW PLAYING</p>
+          <p class="eyebrow">SINGLE LOOP</p>
           <h1>音乐</h1>
         </div>
-        <p>${escapeHtml(playlistTitle)}</p>
+        <p>默认关闭，点击播放后单曲循环</p>
       </header>
-      <div class="music-config">
-        <input id="neteasePlaylistInput" type="text" inputmode="numeric" value="${playlistId}" placeholder="网易云歌单 ID" aria-label="网易云歌单 ID" />
-        <button class="text-button primary" type="button" data-action="load-music">载入歌单</button>
+      <div class="music-player">
+        <div class="single-track-player${source ? "" : " is-unconfigured"}">
+          <div class="single-disc" aria-hidden="true">
+            <div class="single-cover">${cover}</div>
+          </div>
+          <div class="single-track-copy">
+            <p class="eyebrow">NOW PLAYING</p>
+            <h2>${escapeHtml(title)}</h2>
+            <p>${escapeHtml(artist)}</p>
+            <span id="musicStatus">${source ? "已暂停 · 单曲循环" : "尚未配置音频，请填写歌曲路径"}</span>
+          </div>
+          <div class="music-progress-row">
+            <time id="musicCurrentTime">00:00</time>
+            <input id="musicProgress" type="range" min="0" max="0" value="0" step="0.1" aria-label="播放进度"${source ? "" : " disabled"} />
+            <time id="musicDuration">00:00</time>
+          </div>
+          <div class="single-music-controls">
+            <button class="player-button play-button" type="button" data-action="music-toggle" aria-label="播放" title="播放或暂停"${source ? "" : " disabled"}>▶</button>
+            <label class="volume-control"><span>音量</span><input id="musicVolume" type="range" min="0" max="1" value="${getMusicVolumePercent() / 100}" step="0.05" aria-label="音量" /></label>
+          </div>
+        </div>
       </div>
-      <div class="music-player">${player}</div>
     </section>
   `;
   focusContent();
+  updateMusicPlayerUi(elements.musicAudio);
 }
 
 function getProfileContent() {
@@ -427,6 +505,20 @@ function safeAvatarSource(value) {
   return /^(data:image\/|https?:\/\/|assets\/|\.\/|\.\.\/)/i.test(source) ? source : "";
 }
 
+function updateBrandAvatar() {
+  const profile = getProfileContent();
+  const source = safeAvatarSource(profile.avatar);
+  elements.brandAvatar.replaceChildren();
+  if (source) {
+    const image = document.createElement("img");
+    image.src = source;
+    image.alt = "";
+    elements.brandAvatar.append(image);
+  } else {
+    elements.brandAvatar.textContent = "O";
+  }
+}
+
 function normalizeGithubUsername(value) {
   return String(value || "")
     .trim()
@@ -438,11 +530,15 @@ function normalizeGithubUsername(value) {
 
 function renderProfile() {
   const profile = getProfileContent();
+  updateBrandAvatar();
   const avatarSource = safeAvatarSource(profile.avatar);
   const githubUsername = normalizeGithubUsername(profile.github);
   const email = String(profile.email || "").trim();
+  const emailAddress = email.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+  const birthday = String(profile.birthday || "").trim();
   const contactLinks = [
-    email ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : "",
+    email ? `<a href="${emailAddress ? `mailto:${escapeHtml(emailAddress)}` : "#"}">${escapeHtml(email)}</a>` : "",
+    birthday ? `<span class="profile-birthday">生日：${escapeHtml(birthday)}</span>` : "",
     githubUsername ? `<a href="https://github.com/${escapeHtml(githubUsername)}" target="_blank" rel="noreferrer">GitHub · @${escapeHtml(githubUsername)}</a>` : "",
   ].filter(Boolean).join("");
 
@@ -567,11 +663,97 @@ function closeMenu() {
   elements.scrim.hidden = true;
 }
 
-function setBackground(dataUrl) {
-  const backgroundValue = dataUrl ? `url("${dataUrl}")` : "";
+function getAppearanceSettings() {
+  return {
+    shade: localStorage.getItem("onlyworld-shade") ?? String(appearanceDefaults.shade),
+    blur: localStorage.getItem("onlyworld-blur") ?? String(appearanceDefaults.blur),
+    contentOpacity: localStorage.getItem("onlyworld-content-opacity") ?? String(appearanceDefaults.contentOpacity),
+    navOpacity: localStorage.getItem("onlyworld-nav-opacity") ?? String(appearanceDefaults.navOpacity),
+    musicVolume: String(getMusicVolumePercent()),
+    sakura: localStorage.getItem("onlyworld-sakura") === null
+      ? Boolean(appearanceDefaults.sakura)
+      : localStorage.getItem("onlyworld-sakura") === "true",
+  };
+}
+
+function renderSettings() {
+  const settings = getAppearanceSettings();
+  setActiveRoute("settings");
+  renderDirectory();
+  elements.content.innerHTML = `
+    <section class="settings-view">
+      <header class="page-header settings-page-header">
+        <div>
+          <p class="eyebrow">PREFERENCES</p>
+          <h1>设置</h1>
+        </div>
+        <button class="text-button secondary" type="button" data-action="reset-settings">恢复默认</button>
+      </header>
+
+      <section class="settings-section" aria-labelledby="appearanceSettingsTitle">
+        <div class="settings-section-copy">
+          <p class="eyebrow">APPEARANCE</p>
+          <h2 id="appearanceSettingsTitle">显示</h2>
+          <p>调整页面背景与内容层次。</p>
+        </div>
+        <div class="settings-controls">
+          <label class="range-control">
+            <span>遮罩强度 <output id="shadeValue">${settings.shade}%</output></span>
+            <input id="shadeInput" type="range" min="10" max="72" value="${settings.shade}" />
+          </label>
+          <label class="range-control">
+            <span>背景柔化 <output id="blurValue">${settings.blur}px</output></span>
+            <input id="blurInput" type="range" min="0" max="16" value="${settings.blur}" />
+          </label>
+          <label class="range-control">
+            <span>内容不透明度 <output id="contentOpacityValue">${settings.contentOpacity}%</output></span>
+            <input id="contentOpacityInput" type="range" min="38" max="100" value="${settings.contentOpacity}" />
+          </label>
+          <label class="range-control">
+            <span>导航不透明度 <output id="navOpacityValue">${settings.navOpacity}%</output></span>
+            <input id="navOpacityInput" type="range" min="45" max="100" value="${settings.navOpacity}" />
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-section" aria-labelledby="motionSettingsTitle">
+        <div class="settings-section-copy">
+          <p class="eyebrow">MOTION</p>
+          <h2 id="motionSettingsTitle">动态效果</h2>
+          <p>控制页面上的环境动画。</p>
+        </div>
+        <div class="settings-controls">
+          <label class="toggle-control">
+            <span><strong>樱花飘落</strong><small>在全站显示轻量樱花飘落效果</small></span>
+            <input id="sakuraToggle" type="checkbox"${settings.sakura ? " checked" : ""} />
+            <span class="toggle-track" aria-hidden="true"><span></span></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-section" aria-labelledby="audioSettingsTitle">
+        <div class="settings-section-copy">
+          <p class="eyebrow">AUDIO</p>
+          <h2 id="audioSettingsTitle">音乐</h2>
+          <p>设置单曲播放器的默认音量。</p>
+        </div>
+        <div class="settings-controls">
+          <label class="range-control">
+            <span>音乐播放音量 <output id="musicVolumeValue">${settings.musicVolume}%</output></span>
+            <input id="musicVolumeInput" type="range" min="0" max="100" value="${settings.musicVolume}" />
+          </label>
+        </div>
+      </section>
+    </section>
+  `;
+  focusContent();
+}
+
+function setBackground(source, persist = false) {
+  const safeSource = safeAvatarSource(source);
+  const backgroundValue = safeSource ? `url(${JSON.stringify(safeSource)})` : "";
   elements.wallpaper.style.backgroundImage = backgroundValue;
-  elements.backgroundPreview.style.backgroundImage = backgroundValue;
-  localStorage.setItem("onlyworld-background", dataUrl || "");
+  if (persist) localStorage.setItem("onlyworld-background", safeSource);
 }
 
 function resizeImage(file, maxDimension = 1600, quality = 0.8) {
@@ -599,41 +781,64 @@ function resizeImage(file, maxDimension = 1600, quality = 0.8) {
 function applyAppearance() {
   const background = localStorage.getItem("onlyworld-background")
     || localStorage.getItem("onlyworld-background-left")
-    || localStorage.getItem("onlyworld-background-right");
-  const shade = localStorage.getItem("onlyworld-shade") || "32";
-  const blur = localStorage.getItem("onlyworld-blur") || "0";
-  const contentOpacity = localStorage.getItem("onlyworld-content-opacity") || "70";
-  const navOpacity = localStorage.getItem("onlyworld-nav-opacity") || "88";
+    || localStorage.getItem("onlyworld-background-right")
+    || appearanceDefaults.wallpaper;
+  const settings = getAppearanceSettings();
 
-  if (background) setBackground(background);
-  elements.shadeInput.value = shade;
-  elements.blurInput.value = blur;
-  elements.contentOpacityInput.value = contentOpacity;
-  elements.navOpacityInput.value = navOpacity;
-  updateShade(shade);
-  updateBlur(blur);
-  updateContentOpacity(contentOpacity);
-  updateNavOpacity(navOpacity);
+  setBackground(background);
+  updateShade(settings.shade);
+  updateBlur(settings.blur);
+  updateContentOpacity(settings.contentOpacity);
+  updateNavOpacity(settings.navOpacity);
+  updateMusicVolume(settings.musicVolume);
+  updateSakura(settings.sakura);
 }
 
 function updateShade(value) {
   document.documentElement.style.setProperty("--shade-opacity", Number(value) / 100);
-  elements.shadeValue.textContent = `${value}%`;
+  const output = document.querySelector("#shadeValue");
+  if (output) output.textContent = `${value}%`;
 }
 
 function updateBlur(value) {
   document.documentElement.style.setProperty("--backdrop-blur", `${value}px`);
-  elements.blurValue.textContent = `${value}px`;
+  const output = document.querySelector("#blurValue");
+  if (output) output.textContent = `${value}px`;
 }
 
 function updateContentOpacity(value) {
   document.documentElement.style.setProperty("--content-opacity", Number(value) / 100);
-  elements.contentOpacityValue.textContent = `${value}%`;
+  const output = document.querySelector("#contentOpacityValue");
+  if (output) output.textContent = `${value}%`;
 }
 
 function updateNavOpacity(value) {
   document.documentElement.style.setProperty("--nav-opacity", Number(value) / 100);
-  elements.navOpacityValue.textContent = `${value}%`;
+  const output = document.querySelector("#navOpacityValue");
+  if (output) output.textContent = `${value}%`;
+}
+
+function updateMusicVolume(value) {
+  const percent = Math.min(100, Math.max(0, Number(value)));
+  const settingsInput = document.querySelector("#musicVolumeInput");
+  const settingsOutput = document.querySelector("#musicVolumeValue");
+  if (settingsInput) settingsInput.value = String(percent);
+  if (settingsOutput) settingsOutput.textContent = `${Math.round(percent)}%`;
+  const audio = document.querySelector("#musicAudio");
+  const playerVolume = document.querySelector("#musicVolume");
+  if (audio) audio.volume = percent / 100;
+  if (playerVolume) playerVolume.value = String(percent / 100);
+}
+
+let sakuraEnabled = false;
+
+function updateSakura(enabled) {
+  sakuraEnabled = Boolean(enabled);
+  elements.sakuraCanvas.hidden = !sakuraEnabled;
+  if (!sakuraEnabled) {
+    const context = elements.sakuraCanvas.getContext("2d");
+    context.clearRect(0, 0, elements.sakuraCanvas.width, elements.sakuraCanvas.height);
+  }
 }
 
 function getWelcomeCopy() {
@@ -694,6 +899,7 @@ function populateProfileEditor(profile) {
   elements.profileGreetingInput.value = profile.greeting || "";
   elements.profileBioInput.value = profile.bio || "";
   elements.profileEmailInput.value = profile.email || "";
+  elements.profileBirthdayInput.value = profile.birthday || "";
   elements.profileGithubInput.value = profile.github || "";
   elements.profileDirectionInput.value = profile.direction || "";
   elements.profileTopicsInput.value = profile.topics || "";
@@ -713,6 +919,7 @@ function saveProfile() {
     greeting: elements.profileGreetingInput.value.trim() || profileContent.greeting,
     bio: elements.profileBioInput.value.trim() || profileContent.bio,
     email: elements.profileEmailInput.value.trim(),
+    birthday: elements.profileBirthdayInput.value.trim() || profileContent.birthday,
     github: normalizeGithubUsername(elements.profileGithubInput.value),
     direction: elements.profileDirectionInput.value.trim() || profileContent.direction,
     topics: elements.profileTopicsInput.value.trim() || profileContent.topics,
@@ -751,7 +958,24 @@ function updateReadingProgress() {
 function updateClock() {
   const now = new Date();
   const pad = (value) => String(value).padStart(2, "0");
-  elements.liveClock.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  const lunarParts = new Intl.DateTimeFormat("zh-CN-u-ca-chinese", {
+    month: "long",
+    day: "numeric",
+  }).formatToParts(now);
+  const lunarMonth = lunarParts.find((part) => part.type === "month")?.value || "";
+  const lunarDayNumber = Number(lunarParts.find((part) => part.type === "day")?.value || 1);
+  const lunarDay = lunarDayNumber <= 10
+    ? `初${["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"][lunarDayNumber - 1]}`
+    : lunarDayNumber < 20
+      ? `十${["一", "二", "三", "四", "五", "六", "七", "八", "九"][lunarDayNumber - 11]}`
+      : lunarDayNumber === 20
+        ? "二十"
+        : lunarDayNumber < 30
+          ? `廿${["一", "二", "三", "四", "五", "六", "七", "八", "九"][lunarDayNumber - 21]}`
+          : "三十";
+  const solarDate = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}`;
+  const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  elements.liveClock.textContent = `${solarDate}  ${time}  农历${lunarMonth}${lunarDay}`;
 }
 
 function updateWallpaperParallax(event) {
@@ -881,21 +1105,97 @@ function setupWelcomeCanvas() {
   window.requestAnimationFrame(draw);
 }
 
+function setupSakuraEffect() {
+  const canvas = elements.sakuraCanvas;
+  const context = canvas.getContext("2d");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let petals = [];
+  let width = 0;
+  let height = 0;
+
+  function createPetal(fromTop = false) {
+    return {
+      x: Math.random() * width,
+      y: fromTop ? -20 - Math.random() * height * 0.2 : Math.random() * height,
+      size: 5 + Math.random() * 7,
+      speed: 0.35 + Math.random() * 0.7,
+      sway: 0.5 + Math.random() * 1.2,
+      phase: Math.random() * Math.PI * 2,
+      rotation: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.018,
+      alpha: 0.32 + Math.random() * 0.38,
+    };
+  }
+
+  function resize() {
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.round(width * ratio);
+    canvas.height = Math.round(height * ratio);
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    const targetCount = Math.max(16, Math.min(38, Math.round(width / 42)));
+    petals = Array.from({ length: targetCount }, () => createPetal());
+  }
+
+  function drawPetal(petal) {
+    context.save();
+    context.translate(petal.x, petal.y);
+    context.rotate(petal.rotation);
+    context.fillStyle = `rgba(242, 151, 174, ${petal.alpha})`;
+    context.beginPath();
+    context.moveTo(0, -petal.size);
+    context.bezierCurveTo(petal.size * 0.9, -petal.size * 0.45, petal.size * 0.7, petal.size * 0.55, 0, petal.size);
+    context.bezierCurveTo(-petal.size * 0.7, petal.size * 0.55, -petal.size * 0.9, -petal.size * 0.45, 0, -petal.size);
+    context.fill();
+    context.restore();
+  }
+
+  function draw(timestamp) {
+    context.clearRect(0, 0, width, height);
+    if (sakuraEnabled && !reducedMotion.matches) {
+      petals.forEach((petal) => {
+        petal.y += petal.speed;
+        petal.x += Math.sin(timestamp * 0.001 + petal.phase) * petal.sway;
+        petal.rotation += petal.spin;
+        if (petal.y > height + 24 || petal.x < -30 || petal.x > width + 30) {
+          Object.assign(petal, createPetal(true));
+        }
+        drawPetal(petal);
+      });
+    }
+    window.requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener("resize", resize);
+  window.requestAnimationFrame(draw);
+}
+
 document.addEventListener("click", (event) => {
   const actionButton = event.target.closest("[data-action]");
   if (actionButton?.dataset.action === "edit-profile") {
     openProfileEditor();
     return;
   }
-  if (actionButton?.dataset.action === "load-music") {
-    const input = document.querySelector("#neteasePlaylistInput");
-    const playlistId = input.value.replace(/\D/g, "");
-    if (playlistId) localStorage.setItem("onlyworld-netease-playlist", playlistId);
-    else localStorage.removeItem("onlyworld-netease-playlist");
-    renderMusic();
+  if (actionButton?.dataset.action === "music-toggle") {
+    const audio = elements.musicAudio;
+    if (!audio?.getAttribute("src")) return;
+    if (audio.paused) audio.play().catch(() => updateMusicPlayerUi(audio));
+    else audio.pause();
     return;
   }
-
+  if (actionButton?.dataset.action === "reset-settings") {
+    localStorage.removeItem("onlyworld-shade");
+    localStorage.removeItem("onlyworld-blur");
+    localStorage.removeItem("onlyworld-content-opacity");
+    localStorage.removeItem("onlyworld-nav-opacity");
+    localStorage.removeItem("onlyworld-music-volume");
+    localStorage.removeItem("onlyworld-sakura");
+    applyAppearance();
+    renderSettings();
+    return;
+  }
   const noteButton = event.target.closest("[data-note-id]");
   if (noteButton) {
     renderArticle(noteButton.dataset.noteId);
@@ -912,8 +1212,39 @@ document.addEventListener("click", (event) => {
       photos: renderPhotos,
       music: renderMusic,
       profile: renderProfile,
+      settings: renderSettings,
     };
     (routes[routeButton.dataset.route] || renderHome)();
+  }
+});
+
+document.addEventListener("input", (event) => {
+  const { id, value, checked } = event.target;
+  if (id === "shadeInput") {
+    updateShade(value);
+    localStorage.setItem("onlyworld-shade", value);
+  } else if (id === "blurInput") {
+    updateBlur(value);
+    localStorage.setItem("onlyworld-blur", value);
+  } else if (id === "contentOpacityInput") {
+    updateContentOpacity(value);
+    localStorage.setItem("onlyworld-content-opacity", value);
+  } else if (id === "navOpacityInput") {
+    updateNavOpacity(value);
+    localStorage.setItem("onlyworld-nav-opacity", value);
+  } else if (id === "musicVolumeInput") {
+    updateMusicVolume(value);
+    localStorage.setItem("onlyworld-music-volume", value);
+  } else if (id === "musicProgress") {
+    elements.musicAudio.currentTime = Number(value);
+    updateMusicPlayerUi(elements.musicAudio);
+  } else if (id === "musicVolume") {
+    const percent = Math.round(Number(value) * 100);
+    updateMusicVolume(percent);
+    localStorage.setItem("onlyworld-music-volume", String(percent));
+  } else if (id === "sakuraToggle") {
+    updateSakura(checked);
+    localStorage.setItem("onlyworld-sakura", String(checked));
   }
 });
 
@@ -922,13 +1253,7 @@ document.querySelector("#menuButton").addEventListener("click", openMenu);
 document.querySelector("#closeMenuButton").addEventListener("click", closeMenu);
 elements.scrim.addEventListener("click", closeMenu);
 
-document.querySelector("#backgroundButton").addEventListener("click", () => {
-  elements.settingsDialog.showModal();
-});
-
 document.querySelector("#returnWelcomeButton").addEventListener("click", showWelcome);
-document.querySelector("#welcomeEditButton").addEventListener("click", openWelcomeEditor);
-document.querySelector("#editWelcomeButton").addEventListener("click", openWelcomeEditor);
 document.querySelector("#saveWelcomeCopy").addEventListener("click", saveWelcomeCopy);
 document.querySelector("#resetWelcomeCopy").addEventListener("click", () => {
   localStorage.removeItem("onlyworld-welcome-copy");
@@ -970,63 +1295,17 @@ document.querySelector("#resetProfile").addEventListener("click", () => {
   renderProfile();
 });
 
-elements.backgroundInput.addEventListener("change", async (event) => {
-  const [file] = event.target.files;
-  if (!file) return;
-  try {
-    setBackground(await resizeImage(file));
-  } catch (error) {
-    console.error("Unable to load wallpaper image", error);
-  }
-});
-
-elements.shadeInput.addEventListener("input", (event) => {
-  updateShade(event.target.value);
-  localStorage.setItem("onlyworld-shade", event.target.value);
-});
-
-elements.blurInput.addEventListener("input", (event) => {
-  updateBlur(event.target.value);
-  localStorage.setItem("onlyworld-blur", event.target.value);
-});
-
-elements.contentOpacityInput.addEventListener("input", (event) => {
-  updateContentOpacity(event.target.value);
-  localStorage.setItem("onlyworld-content-opacity", event.target.value);
-});
-
-elements.navOpacityInput.addEventListener("input", (event) => {
-  updateNavOpacity(event.target.value);
-  localStorage.setItem("onlyworld-nav-opacity", event.target.value);
-});
-
-document.querySelector("#resetBackground").addEventListener("click", () => {
-  localStorage.removeItem("onlyworld-background");
-  localStorage.removeItem("onlyworld-background-left");
-  localStorage.removeItem("onlyworld-background-right");
-  localStorage.removeItem("onlyworld-shade");
-  localStorage.removeItem("onlyworld-blur");
-  localStorage.removeItem("onlyworld-content-opacity");
-  localStorage.removeItem("onlyworld-nav-opacity");
-  elements.wallpaper.removeAttribute("style");
-  elements.backgroundPreview.removeAttribute("style");
-  elements.shadeInput.value = "32";
-  elements.blurInput.value = "0";
-  elements.contentOpacityInput.value = "70";
-  elements.navOpacityInput.value = "88";
-  updateShade("32");
-  updateBlur("0");
-  updateContentOpacity("70");
-  updateNavOpacity("88");
-});
-
 elements.enterSite.addEventListener("click", enterSite);
 window.addEventListener("pointermove", updateWallpaperParallax, { passive: true });
 window.addEventListener("scroll", updateReadingProgress, { passive: true });
 elements.content.addEventListener("scroll", updateReadingProgress, { passive: true });
 
+setupSakuraEffect();
+initializeMusicAudio();
+configureMusicSource(safeAudioSource(configuredContent.music?.src));
 applyAppearance();
 applyWelcomeCopy(getWelcomeCopy());
+updateBrandAvatar();
 setupWelcomeCanvas();
 updateClock();
 window.setInterval(updateClock, 250);

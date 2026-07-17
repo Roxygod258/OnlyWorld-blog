@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="splash-active">
+    <canvas class="sakura-canvas" id="sakuraCanvas" aria-hidden="true"></canvas>
     <section class="welcome-screen" id="welcomeScreen" aria-labelledby="welcomeTitle">
       <canvas class="welcome-canvas" id="welcomeCanvas" aria-hidden="true"></canvas>
       <div class="welcome-index" aria-hidden="true">
@@ -19,13 +20,6 @@
         <span>PERSONAL BLOG</span>
         <span>LEARNING · LIFE</span>
       </div>
-      <button
-        class="welcome-edit-button"
-        id="welcomeEditButton"
-        type="button"
-        aria-label="编辑欢迎页文字"
-        title="编辑欢迎页文字"
-      >✎</button>
       <div class="welcome-content">
         <p class="welcome-kicker" id="welcomeKicker">WELCOME TO MY PERSONAL BLOG</p>
         <h1 id="welcomeTitle">OnlyWorld</h1>
@@ -60,7 +54,7 @@
         </button>
 
         <div class="brand">
-          <button class="brand-mark avatar-button" type="button" data-route="profile" aria-label="查看 OnlyWorld 个人主页" title="个人主页">O</button>
+          <button class="brand-mark avatar-button" id="brandAvatar" type="button" data-route="profile" aria-label="查看 OnlyWorld 个人主页" title="个人主页">O</button>
           <button class="brand-copy" type="button" data-route="home" aria-label="返回首页">
             <strong>OnlyWorld</strong>
             <small>PERSONAL BLOG</small>
@@ -74,6 +68,13 @@
           <button class="top-nav-item" type="button" data-route="photos">照片</button>
           <button class="top-nav-item" type="button" data-route="music">音乐</button>
           <button class="top-nav-item" type="button" data-route="archive">归档</button>
+          <button
+            class="top-nav-item settings-nav-item"
+            type="button"
+            data-route="settings"
+            aria-label="打开设置"
+            title="设置"
+          ><span aria-hidden="true">⚙</span></button>
         </nav>
 
         <div class="topbar-actions">
@@ -83,30 +84,12 @@
           </label>
           <button
             class="icon-button"
-            id="editWelcomeButton"
-            type="button"
-            aria-label="编辑欢迎页文字"
-            title="编辑欢迎页文字"
-          >
-            <span aria-hidden="true">✎</span>
-          </button>
-          <button
-            class="icon-button"
             id="returnWelcomeButton"
             type="button"
             aria-label="返回欢迎界面"
             title="返回欢迎界面"
           >
             <span aria-hidden="true">↶</span>
-          </button>
-          <button
-            class="icon-button"
-            id="backgroundButton"
-            type="button"
-            aria-label="背景设置"
-            title="背景设置"
-          >
-            <span aria-hidden="true">◐</span>
           </button>
         </div>
       </header>
@@ -147,56 +130,7 @@
     </div>
 
     <div class="scrim" id="scrim" hidden></div>
-
-    <dialog class="settings-dialog" id="settingsDialog">
-      <form method="dialog">
-        <header class="dialog-head">
-          <div>
-            <p class="eyebrow">APPEARANCE</p>
-          <h2>外观设置</h2>
-          </div>
-          <button class="icon-button" value="cancel" aria-label="关闭设置" title="关闭">
-            <span aria-hidden="true">×</span>
-          </button>
-        </header>
-
-        <div class="settings-body">
-          <div class="wallpaper-option">
-            <div class="background-preview" id="backgroundPreview" aria-hidden="true"></div>
-            <label class="file-button" for="backgroundInput">
-              <span aria-hidden="true">＋</span>
-              <span>选择整页壁纸</span>
-            </label>
-            <input id="backgroundInput" type="file" accept="image/*" hidden />
-          </div>
-
-          <label class="range-control">
-            <span>遮罩强度 <output id="shadeValue">64%</output></span>
-            <input id="shadeInput" type="range" min="10" max="72" value="32" />
-          </label>
-
-          <label class="range-control">
-            <span>背景柔化 <output id="blurValue">0px</output></span>
-            <input id="blurInput" type="range" min="0" max="16" value="0" />
-          </label>
-
-          <label class="range-control">
-            <span>内容不透明度 <output id="contentOpacityValue">70%</output></span>
-            <input id="contentOpacityInput" type="range" min="38" max="100" value="70" />
-          </label>
-
-          <label class="range-control">
-            <span>导航不透明度 <output id="navOpacityValue">88%</output></span>
-            <input id="navOpacityInput" type="range" min="45" max="100" value="88" />
-          </label>
-        </div>
-
-        <footer class="dialog-actions">
-          <button class="text-button secondary" id="resetBackground" type="button">恢复默认</button>
-          <button class="text-button primary" value="default">完成</button>
-        </footer>
-      </form>
-    </dialog>
+    <audio id="musicAudio" loop preload="metadata"></audio>
 
     <dialog class="settings-dialog welcome-editor" id="welcomeEditorDialog">
       <form method="dialog" id="welcomeEditorForm">
@@ -270,10 +204,16 @@
             <textarea id="profileBioInput" rows="4" maxlength="320"></textarea>
           </label>
           <div class="two-column-fields">
-            <label class="text-control">
-              <span>邮箱</span>
-              <input id="profileEmailInput" type="email" maxlength="100" placeholder="name@example.com" />
-            </label>
+            <div class="stacked-fields">
+              <label class="text-control">
+                <span>邮箱</span>
+                <input id="profileEmailInput" type="text" maxlength="100" placeholder="name@example.com" />
+              </label>
+              <label class="text-control">
+                <span>生日</span>
+                <input id="profileBirthdayInput" type="text" maxlength="20" placeholder="7.21" />
+              </label>
+            </div>
             <label class="text-control">
               <span>GitHub 用户名</span>
               <input id="profileGithubInput" type="text" maxlength="60" placeholder="OnlyWorld" />
