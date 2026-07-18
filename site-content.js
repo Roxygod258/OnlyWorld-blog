@@ -13,7 +13,7 @@ window.ONLYWORLD_CONTENT = {
     topics: "哪有什么主题，就看哪个感兴趣~~",
     status: "loading……-->",
     email: "邮箱：1325636110@qq.com",
-    birthday: "7.21",
+    birthday: "",
       github: "https://github.com/Roxygod258",
     website: "codex大人随手赏赐我的罢了，仅作个人学习和记录~~",
       belief: "Roxy and Iriya are both my dearst beloveds. ♥",

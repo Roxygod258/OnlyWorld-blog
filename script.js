@@ -176,18 +176,6 @@ const elements = {
   welcomeTitleInput: document.querySelector("#welcomeTitleInput"),
   welcomeSubtitleInput: document.querySelector("#welcomeSubtitleInput"),
   enterButtonInput: document.querySelector("#enterButtonInput"),
-  profileEditorDialog: document.querySelector("#profileEditorDialog"),
-  profileEditorForm: document.querySelector("#profileEditorForm"),
-  profileAvatarInput: document.querySelector("#profileAvatarInput"),
-  profileAvatarPreview: document.querySelector("#profileAvatarPreview"),
-  profileGreetingInput: document.querySelector("#profileGreetingInput"),
-  profileBioInput: document.querySelector("#profileBioInput"),
-  profileEmailInput: document.querySelector("#profileEmailInput"),
-  profileBirthdayInput: document.querySelector("#profileBirthdayInput"),
-  profileGithubInput: document.querySelector("#profileGithubInput"),
-  profileDirectionInput: document.querySelector("#profileDirectionInput"),
-  profileTopicsInput: document.querySelector("#profileTopicsInput"),
-  profileStatusInput: document.querySelector("#profileStatusInput"),
 };
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
@@ -493,11 +481,7 @@ function renderMusic() {
 }
 
 function getProfileContent() {
-  try {
-    return { ...profileContent, ...JSON.parse(localStorage.getItem("onlyworld-profile") || "{}") };
-  } catch {
-    return { ...profileContent };
-  }
+  return { ...profileContent };
 }
 
 function safeAvatarSource(value) {
@@ -553,7 +537,6 @@ function renderProfile() {
             <h1>关于我</h1>
             <p>这里记录我是谁、正在关注什么，以及这个个人空间存在的原因。</p>
           </div>
-          <button class="icon-button" type="button" data-action="edit-profile" aria-label="编辑个人资料" title="编辑个人资料"><span aria-hidden="true">✎</span></button>
         </div>
       </header>
 
@@ -756,28 +739,6 @@ function setBackground(source, persist = false) {
   if (persist) localStorage.setItem("onlyworld-background", safeSource);
 }
 
-function resizeImage(file, maxDimension = 1600, quality = 0.8) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = () => {
-      const image = new Image();
-      image.onerror = reject;
-      image.onload = () => {
-        const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(image.width * scale);
-        canvas.height = Math.round(image.height * scale);
-        const context = canvas.getContext("2d");
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      image.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 function applyAppearance() {
   const background = localStorage.getItem("onlyworld-background")
     || localStorage.getItem("onlyworld-background-left")
@@ -876,57 +837,6 @@ function saveWelcomeCopy() {
   };
   localStorage.setItem("onlyworld-welcome-copy", JSON.stringify(copy));
   applyWelcomeCopy(copy);
-}
-
-let pendingProfileAvatar = "";
-
-function updateProfileAvatarPreview(source) {
-  elements.profileAvatarPreview.replaceChildren();
-  const safeSource = safeAvatarSource(source);
-  if (safeSource) {
-    const image = document.createElement("img");
-    image.src = safeSource;
-    image.alt = "";
-    elements.profileAvatarPreview.append(image);
-  } else {
-    elements.profileAvatarPreview.textContent = "OW";
-  }
-}
-
-function populateProfileEditor(profile) {
-  pendingProfileAvatar = safeAvatarSource(profile.avatar);
-  updateProfileAvatarPreview(pendingProfileAvatar);
-  elements.profileGreetingInput.value = profile.greeting || "";
-  elements.profileBioInput.value = profile.bio || "";
-  elements.profileEmailInput.value = profile.email || "";
-  elements.profileBirthdayInput.value = profile.birthday || "";
-  elements.profileGithubInput.value = profile.github || "";
-  elements.profileDirectionInput.value = profile.direction || "";
-  elements.profileTopicsInput.value = profile.topics || "";
-  elements.profileStatusInput.value = profile.status || "";
-}
-
-function openProfileEditor() {
-  populateProfileEditor(getProfileContent());
-  elements.profileEditorDialog.showModal();
-}
-
-function saveProfile() {
-  const current = getProfileContent();
-  const profile = {
-    ...current,
-    avatar: pendingProfileAvatar,
-    greeting: elements.profileGreetingInput.value.trim() || profileContent.greeting,
-    bio: elements.profileBioInput.value.trim() || profileContent.bio,
-    email: elements.profileEmailInput.value.trim(),
-    birthday: elements.profileBirthdayInput.value.trim() || profileContent.birthday,
-    github: normalizeGithubUsername(elements.profileGithubInput.value),
-    direction: elements.profileDirectionInput.value.trim() || profileContent.direction,
-    topics: elements.profileTopicsInput.value.trim() || profileContent.topics,
-    status: elements.profileStatusInput.value.trim() || profileContent.status,
-  };
-  localStorage.setItem("onlyworld-profile", JSON.stringify(profile));
-  renderProfile();
 }
 
 function showWelcome() {
@@ -1174,10 +1084,6 @@ function setupSakuraEffect() {
 
 document.addEventListener("click", (event) => {
   const actionButton = event.target.closest("[data-action]");
-  if (actionButton?.dataset.action === "edit-profile") {
-    openProfileEditor();
-    return;
-  }
   if (actionButton?.dataset.action === "music-toggle") {
     const audio = elements.musicAudio;
     if (!audio?.getAttribute("src")) return;
@@ -1262,37 +1168,6 @@ document.querySelector("#resetWelcomeCopy").addEventListener("click", () => {
   elements.welcomeTitleInput.value = welcomeDefaults.title;
   elements.welcomeSubtitleInput.value = welcomeDefaults.subtitle;
   elements.enterButtonInput.value = welcomeDefaults.button;
-});
-
-elements.profileAvatarInput.addEventListener("change", async (event) => {
-  const [file] = event.target.files;
-  if (!file) return;
-  try {
-    pendingProfileAvatar = await resizeImage(file, 640, 0.86);
-    updateProfileAvatarPreview(pendingProfileAvatar);
-  } catch (error) {
-    console.error("Unable to load profile image", error);
-  }
-});
-
-document.querySelector("#removeProfileAvatar").addEventListener("click", () => {
-  pendingProfileAvatar = "";
-  elements.profileAvatarInput.value = "";
-  updateProfileAvatarPreview("");
-});
-
-document.querySelector("#saveProfile").addEventListener("click", (event) => {
-  if (!elements.profileEditorForm.reportValidity()) {
-    event.preventDefault();
-    return;
-  }
-  saveProfile();
-});
-
-document.querySelector("#resetProfile").addEventListener("click", () => {
-  localStorage.removeItem("onlyworld-profile");
-  populateProfileEditor(profileContent);
-  renderProfile();
 });
 
 elements.enterSite.addEventListener("click", enterSite);
