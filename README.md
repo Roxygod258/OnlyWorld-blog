@@ -76,6 +76,7 @@ localStorage.removeItem("onlyworld-welcome-copy");
   id: "unique-note-id",
   title: "文章标题",
   date: "2026-07-17",
+  category: "Web",
   tags: ["标签一", "标签二"],
   summary: "显示在文章列表中的摘要。",
   readTime: "5 分钟",
@@ -91,12 +92,15 @@ localStorage.removeItem("onlyworld-welcome-copy");
 
 - `id` 必须是唯一的英文标识，不能和其他文章重复。
 - 日期必须使用 `YYYY-MM-DD` 格式。
+- `category` 决定左侧目录名称，例如 `"Web"`、`"Re"`、`"随笔"`；名称相同的文章会自动归入同一目录。
 - 正文放在一对反引号之间。
 - 每篇文章结束的 `},` 不要删除。
 - 段落使用 `<p>文字</p>`，小标题使用 `<h2>标题</h2>`。
 - 代码块可以使用 `<pre><code>代码</code></pre>`。
 
-网站会自动更新首页目录、搜索和日期归档，不需要修改其他文件。
+网站会自动更新首页目录、搜索和日期归档，不需要修改其他文件。所有文章列表都会按日期从新到旧排列：最新文章在最上方，较早文章在下方，无需手动调整对象在数组中的位置。
+
+未填写 `category` 的普通文章默认进入 `PWN 目录`，未填写 `category` 的杂谈默认进入 `杂谈目录`。要创建新目录，只需给至少一篇文章填写新的分类名称，不需要修改 `index.html` 或 `script.js`。
 
 ## 添加杂谈
 

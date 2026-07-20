@@ -1,5 +1,17 @@
-window.ONLYWORLD_POSTS = {
+window.ONLYWORLD_POSTS = {   /*每次编辑前记得复制模板*/
   notes: [
+    /* 文章模板：复制后取消注释并填写所有字段。
+    {
+      id: "unique-note-id",
+      title: "文章标题",
+      date: "2026-07-20",
+      category: "Web",
+      tags: ["", "", ""],
+      summary: "文章摘要",
+      readTime: "5 分钟",
+      content: `<p>文章正文</p>`,
+    },
+    */
     {
       id: "pwn-roadmap",
       title: "Pwn 学习路线与环境准备",

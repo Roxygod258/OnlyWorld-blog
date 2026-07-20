@@ -1,4 +1,4 @@
-const notes = window.ONLYWORLD_POSTS?.notes || [
+const noteSource = window.ONLYWORLD_POSTS?.notes || [
   {
     id: "pwn-roadmap",
     title: "Pwn 学习路线与环境准备",
@@ -78,7 +78,7 @@ PIE:      PIE enabled</code></pre>
   },
 ];
 
-const thoughts = window.ONLYWORLD_POSTS?.thoughts || [
+const thoughtSource = window.ONLYWORLD_POSTS?.thoughts || [
   {
     id: "why-i-keep-notes",
     kind: "thought",
@@ -110,6 +110,16 @@ const thoughts = window.ONLYWORLD_POSTS?.thoughts || [
   },
 ];
 
+function compareEntriesByDateNewestFirst(left, right) {
+  const leftTime = Date.parse(`${left.date}T00:00:00`);
+  const rightTime = Date.parse(`${right.date}T00:00:00`);
+  const safeLeftTime = Number.isNaN(leftTime) ? Number.NEGATIVE_INFINITY : leftTime;
+  const safeRightTime = Number.isNaN(rightTime) ? Number.NEGATIVE_INFINITY : rightTime;
+  return safeRightTime - safeLeftTime;
+}
+
+const notes = [...noteSource].sort(compareEntriesByDateNewestFirst);
+const thoughts = [...thoughtSource].sort(compareEntriesByDateNewestFirst);
 const configuredContent = window.ONLYWORLD_CONTENT || {};
 
 const appearanceDefaults = {
@@ -146,7 +156,7 @@ const profileContent = {
   ...(configuredContent.profile || {}),
 };
 
-const allEntries = [...notes, ...thoughts];
+const allEntries = [...notes, ...thoughts].sort(compareEntriesByDateNewestFirst);
 
 const elements = {
   welcomeScreen: document.querySelector("#welcomeScreen"),
@@ -154,10 +164,7 @@ const elements = {
   enterSite: document.querySelector("#enterSite"),
   content: document.querySelector("#content"),
   musicAudio: document.querySelector("#musicAudio"),
-  directory: document.querySelector("#directory"),
-  noteCount: document.querySelector("#noteCount"),
-  thoughtsDirectory: document.querySelector("#thoughtsDirectory"),
-  thoughtCount: document.querySelector("#thoughtCount"),
+  directories: document.querySelector("#directories"),
   searchInput: document.querySelector("#searchInput"),
   sidebar: document.querySelector("#sidebar"),
   scrim: document.querySelector("#scrim"),
@@ -211,21 +218,43 @@ function noteRow(note) {
   `;
 }
 
+function getEntryCategory(entry) {
+  const category = String(entry.category || "").trim();
+  if (category) return category;
+  return entry.kind === "thought" ? "杂谈" : "PWN";
+}
+
+function formatDirectoryLabel(category) {
+  const separator = /[\u3400-\u9fff]$/.test(category) ? "" : " ";
+  return `${category}${separator}目录`;
+}
+
+const directoryCategoryOrder = [];
+[...noteSource, ...thoughtSource].forEach((entry) => {
+  const category = getEntryCategory(entry);
+  if (!directoryCategoryOrder.includes(category)) directoryCategoryOrder.push(category);
+});
+
 function renderDirectory(activeId = "") {
-  elements.noteCount.textContent = String(notes.length);
-  elements.thoughtCount.textContent = String(thoughts.length);
-  elements.directory.innerHTML = notes.map((note) => `
-    <button class="directory-item${note.id === activeId ? " is-active" : ""}" type="button" data-note-id="${note.id}">
-      <strong>${note.title}</strong>
-      <time datetime="${note.date}">${formatDate(note.date)}</time>
-    </button>
-  `).join("");
-  elements.thoughtsDirectory.innerHTML = thoughts.map((note) => `
-    <button class="directory-item${note.id === activeId ? " is-active" : ""}" type="button" data-note-id="${note.id}">
-      <strong>${note.title}</strong>
-      <time datetime="${note.date}">${formatDate(note.date)}</time>
-    </button>
-  `).join("");
+  elements.directories.innerHTML = directoryCategoryOrder.map((category) => {
+    const entries = allEntries.filter((entry) => getEntryCategory(entry) === category);
+    return `
+      <section class="directory-group">
+        <div class="section-label">
+          <span>${escapeHtml(formatDirectoryLabel(category))}</span>
+          <span>${entries.length}</span>
+        </div>
+        <div class="directory">
+          ${entries.map((entry) => `
+            <button class="directory-item${entry.id === activeId ? " is-active" : ""}" type="button" data-note-id="${entry.id}">
+              <strong>${escapeHtml(entry.title)}</strong>
+              <time datetime="${entry.date}">${formatDate(entry.date)}</time>
+            </button>
+          `).join("")}
+        </div>
+      </section>
+    `;
+  }).join("");
 }
 
 function setActiveRoute(route) {

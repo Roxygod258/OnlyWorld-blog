@@ -651,7 +651,7 @@ button {
   gap: 4px;
 }
 
-.thoughts-label {
+.directory-group + .directory-group .section-label {
   margin-top: 26px;
   padding-top: 20px;
   border-top: 1px solid var(--line);
