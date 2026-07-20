@@ -234,17 +234,26 @@ const directoryCategoryOrder = [];
   const category = getEntryCategory(entry);
   if (!directoryCategoryOrder.includes(category)) directoryCategoryOrder.push(category);
 });
+const collapsedDirectoryCategories = new Set();
 
 function renderDirectory(activeId = "") {
-  elements.directories.innerHTML = directoryCategoryOrder.map((category) => {
+  elements.directories.innerHTML = directoryCategoryOrder.map((category, index) => {
     const entries = allEntries.filter((entry) => getEntryCategory(entry) === category);
+    const isCollapsed = collapsedDirectoryCategories.has(category);
+    const directoryId = `directory-category-${index}`;
+    const toggleLabel = `${isCollapsed ? "展开" : "收起"}${formatDirectoryLabel(category)}`;
     return `
-      <section class="directory-group">
+      <section class="directory-group${isCollapsed ? " is-collapsed" : ""}">
         <div class="section-label">
           <span>${escapeHtml(formatDirectoryLabel(category))}</span>
-          <span>${entries.length}</span>
+          <span class="directory-label-actions">
+            <span class="directory-count">${entries.length}</span>
+            <button class="directory-toggle" type="button" data-directory-toggle="${escapeHtml(category)}" aria-controls="${directoryId}" aria-expanded="${String(!isCollapsed)}" aria-label="${escapeHtml(toggleLabel)}" title="${escapeHtml(toggleLabel)}">
+              <span class="directory-chevron" aria-hidden="true"></span>
+            </button>
+          </span>
         </div>
-        <div class="directory">
+        <div class="directory" id="${directoryId}"${isCollapsed ? " hidden" : ""}>
           ${entries.map((entry) => `
             <button class="directory-item${entry.id === activeId ? " is-active" : ""}" type="button" data-note-id="${entry.id}">
               <strong>${escapeHtml(entry.title)}</strong>
@@ -1129,6 +1138,23 @@ document.addEventListener("click", (event) => {
     localStorage.removeItem("onlyworld-sakura");
     applyAppearance();
     renderSettings();
+    return;
+  }
+  const directoryToggle = event.target.closest("[data-directory-toggle]");
+  if (directoryToggle) {
+    const category = directoryToggle.dataset.directoryToggle;
+    const directory = document.getElementById(directoryToggle.getAttribute("aria-controls"));
+    const group = directoryToggle.closest(".directory-group");
+    const shouldCollapse = directoryToggle.getAttribute("aria-expanded") === "true";
+
+    if (shouldCollapse) collapsedDirectoryCategories.add(category);
+    else collapsedDirectoryCategories.delete(category);
+
+    directoryToggle.setAttribute("aria-expanded", String(!shouldCollapse));
+    directoryToggle.setAttribute("aria-label", `${shouldCollapse ? "展开" : "收起"}${formatDirectoryLabel(category)}`);
+    directoryToggle.title = directoryToggle.getAttribute("aria-label");
+    group?.classList.toggle("is-collapsed", shouldCollapse);
+    if (directory) directory.hidden = shouldCollapse;
     return;
   }
   const noteButton = event.target.closest("[data-note-id]");
