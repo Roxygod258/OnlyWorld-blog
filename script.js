@@ -253,13 +253,15 @@ function renderDirectory(activeId = "") {
             </button>
           </span>
         </div>
-        <div class="directory" id="${directoryId}"${isCollapsed ? " hidden" : ""}>
-          ${entries.map((entry) => `
-            <button class="directory-item${entry.id === activeId ? " is-active" : ""}" type="button" data-note-id="${entry.id}">
-              <strong>${escapeHtml(entry.title)}</strong>
-              <time datetime="${entry.date}">${formatDate(entry.date)}</time>
-            </button>
-          `).join("")}
+        <div class="directory-collapse" id="${directoryId}" aria-hidden="${String(isCollapsed)}"${isCollapsed ? " inert" : ""}>
+          <div class="directory">
+            ${entries.map((entry) => `
+              <button class="directory-item${entry.id === activeId ? " is-active" : ""}" type="button" data-note-id="${entry.id}">
+                <strong>${escapeHtml(entry.title)}</strong>
+                <time datetime="${entry.date}">${formatDate(entry.date)}</time>
+              </button>
+            `).join("")}
+          </div>
         </div>
       </section>
     `;
@@ -1143,7 +1145,7 @@ document.addEventListener("click", (event) => {
   const directoryToggle = event.target.closest("[data-directory-toggle]");
   if (directoryToggle) {
     const category = directoryToggle.dataset.directoryToggle;
-    const directory = document.getElementById(directoryToggle.getAttribute("aria-controls"));
+    const directoryCollapse = document.getElementById(directoryToggle.getAttribute("aria-controls"));
     const group = directoryToggle.closest(".directory-group");
     const shouldCollapse = directoryToggle.getAttribute("aria-expanded") === "true";
 
@@ -1154,7 +1156,10 @@ document.addEventListener("click", (event) => {
     directoryToggle.setAttribute("aria-label", `${shouldCollapse ? "展开" : "收起"}${formatDirectoryLabel(category)}`);
     directoryToggle.title = directoryToggle.getAttribute("aria-label");
     group?.classList.toggle("is-collapsed", shouldCollapse);
-    if (directory) directory.hidden = shouldCollapse;
+    if (directoryCollapse) {
+      directoryCollapse.setAttribute("aria-hidden", String(shouldCollapse));
+      directoryCollapse.inert = shouldCollapse;
+    }
     return;
   }
   const noteButton = event.target.closest("[data-note-id]");

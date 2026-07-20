@@ -690,15 +690,31 @@ button {
   transform: translateX(-2px) rotate(-45deg);
 }
 
+.directory-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0) scaleY(1);
+  transform-origin: top;
+  transition:
+    grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.directory-group.is-collapsed .directory-collapse {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-7px) scaleY(0.98);
+}
+
 .directory {
   display: grid;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   gap: 4px;
-}
-
-.directory[hidden],
-.directory-group.is-collapsed .directory {
-  display: none;
 }
 
 .directory-group + .directory-group .section-label {
