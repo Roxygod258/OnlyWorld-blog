@@ -13,6 +13,158 @@ window.ONLYWORLD_POSTS = {   /*每次编辑前记得复制模板*/
     },
     */
     {
+      id: "web-sql-injection-basics",
+      title: "SQL 注入入门：从靶场搭建到联合查询",
+      date: "2026-07-21",
+      category: "Web",
+      tags: ["SQL 注入", "MySQL", "Docker"],
+      summary: "从 Docker 靶场、数字型与字符型判断出发，理解布尔盲注、时间盲注和联合查询的完整学习路径。",
+      readTime: "11 分钟",
+      content: `
+        <p>SQL 注入的学习重点不是背下一串 Payload，而是先理解：用户输入最终被放进了 SQL 语句的哪个位置、原语句如何闭合，以及我们能通过页面观察到什么。本文以本地 Docker 靶场和 MySQL 为例，按照从判断到验证的顺序整理今天的课堂内容。</p>
+        <div class="callout"><strong>练习范围</strong><p>以下语句仅用于本地靶场、CTF 或明确授权的安全测试。面对真实网站时，必须先取得授权并控制测试频率。</p></div>
+
+        <h2>一、先搭好可重复的 Docker 靶场</h2>
+        <p>Docker 镜像可以理解为创建环境的模板，容器则是由镜像启动的运行实例。导入镜像后，先确认镜像名称和标签，再把容器内的 Web 端口映射到本机端口。</p>
+        <pre><code># 从压缩包导入镜像
+docker load -i xxx.tar.gz
+
+# 查看本机已有镜像
+docker images
+
+# 后台启动容器：本机 8080 端口映射到容器 80 端口
+docker run --rm -d --name sql-lab -p 8080:80 image-name:tag
+
+# 查看正在运行的容器
+docker ps</code></pre>
+        <ul>
+          <li><code>-d</code> 表示后台运行，<code>--name</code> 为容器指定一个便于识别的名称。</li>
+          <li><code>-p 8080:80</code> 的格式是“本机端口:容器端口”，启动后通常访问 <code>http://127.0.0.1:8080</code>。</li>
+          <li><code>--rm</code> 会在容器停止后自动删除容器实例，但不会删除原镜像。</li>
+        </ul>
+
+        <h2>二、SQL 注入为什么会发生</h2>
+        <p>当后端把用户输入直接拼接进 SQL 字符串时，输入就可能从普通数据变成 SQL 语法的一部分。例如，下面两条查询分别代表常见的数字上下文和字符串上下文：</p>
+        <pre><code>SELECT * FROM users WHERE cid = 2;
+SELECT * FROM users WHERE name = 'admin';</code></pre>
+        <p>如果其中的 <code>2</code> 或 <code>admin</code> 直接来自请求参数，攻击者就可能加入引号、逻辑运算符或查询片段，改变原语句的含义。因此，SQL 注入的根因通常是<strong>动态拼接 SQL</strong>；仅靠黑名单过滤某几个符号并不能从根本上解决问题。</p>
+        <p>在 MySQL 中，<code>#</code> 和带有尾随空白的 <code>-- </code> 都可以开始注释。URL 里的 <code>#</code> 会被浏览器当成页面片段标记，不一定发送给服务器，因此需要写成 URL 编码 <code>%23</code>。练习中常见的 <code>-- -</code> 本质上仍是 <code>-- </code>：第二个短横线后有一个空格，最后的短横线只是让这个空格更容易被看见。</p>
+
+        <h2>三、先确定是否可控，再判断闭合方式</h2>
+        <p>测试时先记录一个能够正常返回内容的基准请求，例如 <code>cid=2</code>。随后只改变一个条件，比较响应内容、状态码、长度和耗时。单独看到一次数据库报错只能说明输入影响了查询，不能仅凭报错就断定注入类型。</p>
+        <div class="article-table-wrap">
+          <table class="article-table">
+            <thead>
+              <tr>
+                <th>上下文</th>
+                <th>真假条件示例</th>
+                <th>最终结构</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>数字型</strong></td>
+                <td><code>2 AND 11=11</code><br /><code>2 AND 11=22</code></td>
+                <td><code>WHERE cid=2 AND 11=11</code></td>
+              </tr>
+              <tr>
+                <td><strong>字符型</strong></td>
+                <td><code>2' AND 11=11-- -</code><br /><code>2' AND 11=22-- -</code></td>
+                <td><code>WHERE name='2' AND 11=11-- -'</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>字符型比数字型多了一步：先用匹配的引号结束原字符串，再在末尾注释掉原查询剩余的引号。真实语句还可能使用双引号、括号或多层括号，所以闭合方式要根据响应逐步判断，不能看到某个符号报错就机械地认定为数字型。</p>
+        <div class="callout"><strong>真假判断的前提</strong><p><code>AND</code> 左侧的原条件必须先成立。如果选择了一个本来就不存在的用户或编号，那么真、假条件都可能返回空页面。此时应换回已知存在的基准值；必要时再谨慎使用 <code>OR</code> 比较响应差异。</p></div>
+
+        <h2>四、根据页面反馈选择验证方式</h2>
+        <p>同一个注入点可以有不同的观察通道。初学时应先找最直观、对服务影响最小的方式，再考虑只能依赖真假或耗时差异的盲注。</p>
+        <div class="article-table-wrap">
+          <table class="article-table">
+            <thead>
+              <tr>
+                <th>方式</th>
+                <th>页面特征</th>
+                <th>判断重点</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>报错观察</strong></td>
+                <td>页面直接显示数据库语法错误</td>
+                <td>错误可帮助理解闭合位置，但生产环境可能隐藏错误信息。</td>
+              </tr>
+              <tr>
+                <td><strong>布尔盲注</strong></td>
+                <td>不显示查询结果，但真假条件对应两种稳定页面</td>
+                <td>分别发送恒真和恒假条件，比较正文、长度或状态码。</td>
+              </tr>
+              <tr>
+                <td><strong>时间盲注</strong></td>
+                <td>真假条件没有可见差异</td>
+                <td>让条件成立时执行延迟函数，例如 MySQL 的 <code>SLEEP()</code>，再比较多次请求耗时。</td>
+              </tr>
+              <tr>
+                <td><strong>联合查询</strong></td>
+                <td>查询结果中的部分字段会显示在页面</td>
+                <td>让原查询与 <code>UNION SELECT</code> 的列数兼容，并找到可见列。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>时间盲注可以使用类似 <code>2 AND IF(1=1,SLEEP(3),0)</code> 的条件验证，但网络波动也会造成延迟。应先测量正常请求耗时，再重复对比真、假条件，不能只凭一次慢响应下结论。字符型场景仍要先正确闭合字符串。</p>
+
+        <h2>五、联合查询的完整步骤</h2>
+        <p>联合查询适用于数据能够回显到页面的情况。它要求前后两条查询返回相同数量的列，并且对应列的数据类型可以兼容。下面假设参数处于数字上下文，原查询有三列。</p>
+        <ol>
+          <li><strong>确定列数：</strong>依次测试 <code>ORDER BY 1</code>、<code>ORDER BY 2</code>……当数字增加到某个值时报错时，前一个值通常就是列数。</li>
+          <li><strong>寻找回显位：</strong>使用不存在的原编号，使原查询尽量不返回数据，再提交 <code>-1 UNION SELECT 1,2,3-- -</code>。页面显示哪个数字，哪个位置就是可利用的回显列。</li>
+          <li><strong>读取基础信息：</strong>把可见位置换成 <code>database()</code>、<code>version()</code> 或 <code>current_user()</code>，分别查看当前库名、数据库版本和数据库用户。</li>
+          <li><strong>按层级枚举：</strong>先找当前库中的表，再找目标表中的字段，最后读取需要验证的数据。</li>
+        </ol>
+        <pre><code># 假设第 2 列能够回显
+-1 UNION SELECT 1,database(),3-- -
+-1 UNION SELECT 1,version(),3-- -
+-1 UNION SELECT 1,current_user(),3-- -</code></pre>
+        <p>将原编号改为 <code>-1</code> 的目的，是避免原查询结果占据页面的回显位置；它不是固定写法，只要选择一个确定不存在的值即可。若 <code>UNION SELECT</code> 始终失败，还要考虑列数、数据类型、闭合方式和关键字过滤，而不是直接认定没有注入。</p>
+
+        <h2>六、通过 information_schema 理解数据库结构</h2>
+        <p>MySQL 5.0 及以上版本提供系统数据库 <code>information_schema</code>，其中保存了库、表和字段等元数据。学习时可以把枚举过程理解为“当前数据库 → 数据表 → 字段 → 记录”四层。</p>
+        <pre><code># 1. 获取当前数据库中的所有表名
+-1 UNION SELECT 1,GROUP_CONCAT(table_name),3
+FROM information_schema.tables
+WHERE table_schema=database()-- -
+
+# 2. 获取 cms_users 表中的所有字段名
+-1 UNION SELECT 1,GROUP_CONCAT(column_name),3
+FROM information_schema.columns
+WHERE table_schema=database()
+  AND table_name='cms_users'-- -
+
+# 3. 在授权靶场中读取目标字段，0x3a 表示冒号
+-1 UNION SELECT 1,GROUP_CONCAT(username,0x3a,password),3
+FROM cms_users-- -</code></pre>
+        <p><code>GROUP_CONCAT()</code> 用于把多行结果合并到一个回显位置。原笔记中的 <code>HEX()</code> 与 <code>UNHEX()</code> 可以在字符编码或过滤造成显示问题时辅助转换，但不是枚举表名的必需步骤，初学时先掌握直接查询更容易理解。</p>
+        <p>字段名必须按实际结果填写，例如系统表中使用的是 <code>table_name</code>，不是 <code>tables_name</code>。读取多列时也不能用斜杠连接，因为 SQL 会把斜杠理解为除法；可以像示例一样使用十六进制的冒号 <code>0x3a</code> 分隔用户名和密码字段。</p>
+
+        <h2>七、正确理解密码哈希</h2>
+        <p>数据库中的密码通常不是明文，而是哈希值。MD5 是单向哈希算法，不能像密文一样直接“解密”。一些在线查询服务只是把哈希与已经收集的常见明文结果进行匹配，所以查不到是正常情况，也不应把真实系统中的敏感哈希上传到第三方网站。</p>
+        <p>从防守角度看，MD5 计算速度快且抗碰撞能力不足，不适合保存密码。实际系统应使用专门的密码哈希算法，例如 Argon2、bcrypt 或 scrypt，并为每个密码使用独立盐值。</p>
+
+        <h2>八、初学者复盘顺序</h2>
+        <ol>
+          <li>先用正常参数建立响应基线，确认输入对应的页面功能。</li>
+          <li>判断输入是否影响 SQL，并推测数字、字符串和括号等上下文。</li>
+          <li>用恒真、恒假条件验证闭合方式，确认页面是否存在稳定差异。</li>
+          <li>根据回显条件选择布尔、时间或联合查询，不要一开始就混用所有方法。</li>
+          <li>联合查询时依次确认列数、回显位、数据库名、表名和字段名。</li>
+          <li>保存原始请求、响应和判断依据，实验结束后总结失败原因。</li>
+        </ol>
+        <div class="callout"><strong>修复原则</strong><p>防止 SQL 注入应优先使用参数化查询或预编译语句，并配合数据库最小权限、统一错误页面和输入类型检查。WAF 与关键字过滤只能作为补充，不能替代参数化查询。</p></div>
+      `,
+    },
+    {
       id: "web-security-basics",
       title: "Web 渗透测试基础：从请求分析到信息收集",
       date: "2026-07-20",

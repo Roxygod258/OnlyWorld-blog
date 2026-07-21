@@ -5,6 +5,11 @@ window.ONLYWORLD_CONTENT = {
         subtitle: "…ようこそ。Ave Mujica の世界へ",
     button: "Start",
   },
+  search: {
+    invalidTitle: "请输入有效的搜索关键词",
+    invalidMessage: "搜索内容不能只包含空格或标点符号，请输入至少一个文字或数字关键词。",
+    dismissButton: "我知道了",
+  },
   profile: {
       avatar: "assets/Iriyabest.jpg",
     greeting: "OnlyWorld",

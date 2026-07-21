@@ -78,10 +78,10 @@
         </nav>
 
         <div class="topbar-actions">
-          <label class="search-field" for="searchInput">
-            <span aria-hidden="true">⌕</span>
+          <form class="search-field" id="searchForm" role="search">
             <input id="searchInput" type="search" placeholder="搜索笔记" autocomplete="off" />
-          </label>
+            <button type="submit" aria-label="搜索" title="搜索"><span aria-hidden="true">⌕</span></button>
+          </form>
           <button
             class="icon-button"
             id="returnWelcomeButton"
@@ -120,6 +120,16 @@
 
     <div class="scrim" id="scrim" hidden></div>
     <audio id="musicAudio" loop preload="metadata"></audio>
+
+    <dialog class="search-alert" id="searchAlert" aria-labelledby="searchAlertTitle" aria-describedby="searchAlertMessage">
+      <div class="search-alert-card">
+        <span class="search-alert-decoration" aria-hidden="true"></span>
+        <p class="eyebrow">SEARCH NOTICE</p>
+        <h2 id="searchAlertTitle"></h2>
+        <p id="searchAlertMessage"></p>
+        <button id="searchAlertClose" type="button"></button>
+      </div>
+    </dialog>
 
     <dialog class="photo-lightbox" id="photoLightbox" aria-label="照片大图">
       <div class="photo-lightbox-shell">

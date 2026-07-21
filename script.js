@@ -141,6 +141,13 @@ const welcomeDefaults = {
   ...(configuredContent.welcome || {}),
 };
 
+const searchDefaults = {
+  invalidTitle: "请输入有效的搜索关键词",
+  invalidMessage: "搜索内容不能只包含空格或标点符号，请输入至少一个文字或数字关键词。",
+  dismissButton: "我知道了",
+  ...(configuredContent.search || {}),
+};
+
 const profileContent = {
   avatar: "",
   greeting: "你好，我是 OnlyWorld。",
@@ -165,7 +172,12 @@ const elements = {
   content: document.querySelector("#content"),
   musicAudio: document.querySelector("#musicAudio"),
   directories: document.querySelector("#directories"),
+  searchForm: document.querySelector("#searchForm"),
   searchInput: document.querySelector("#searchInput"),
+  searchAlert: document.querySelector("#searchAlert"),
+  searchAlertTitle: document.querySelector("#searchAlertTitle"),
+  searchAlertMessage: document.querySelector("#searchAlertMessage"),
+  searchAlertClose: document.querySelector("#searchAlertClose"),
   sidebar: document.querySelector("#sidebar"),
   scrim: document.querySelector("#scrim"),
   wallpaper: document.querySelector(".wallpaper-main"),
@@ -678,17 +690,39 @@ function renderArticle(noteId) {
   focusContent();
 }
 
-function renderSearch(query) {
-  const normalized = query.trim().toLocaleLowerCase("zh-CN");
-  if (!normalized) {
-    renderHome();
+function getSearchKeywords(query) {
+  const normalized = String(query || "").normalize("NFKC").toLocaleLowerCase("zh-CN");
+  return [...new Set(normalized.match(/[\p{L}\p{N}]+/gu) || [])];
+}
+
+function getEntrySearchText(entry) {
+  const content = document.createElement("div");
+  content.innerHTML = String(entry.content || "");
+  return [entry.title, entry.summary, ...entry.tags, getEntryCategory(entry), content.textContent]
+    .join(" ")
+    .normalize("NFKC")
+    .toLocaleLowerCase("zh-CN");
+}
+
+function showInvalidSearchAlert() {
+  elements.searchAlertTitle.textContent = String(searchDefaults.invalidTitle);
+  elements.searchAlertMessage.textContent = String(searchDefaults.invalidMessage);
+  elements.searchAlertClose.textContent = String(searchDefaults.dismissButton);
+  if (!elements.searchAlert.open) elements.searchAlert.showModal();
+}
+
+function submitSearch(query) {
+  const keywords = getSearchKeywords(query);
+  if (!keywords.length) {
+    showInvalidSearchAlert();
     return;
   }
 
-  const matches = allEntries.filter((note) => [note.title, note.summary, ...note.tags]
-    .join(" ")
-    .toLocaleLowerCase("zh-CN")
-    .includes(normalized));
+  const matches = allEntries.filter((entry) => {
+    const searchableText = getEntrySearchText(entry);
+    return keywords.every((keyword) => searchableText.includes(keyword));
+  });
+  const cleanQuery = String(query).trim();
 
   setActiveRoute("");
   renderDirectory();
@@ -696,7 +730,8 @@ function renderSearch(query) {
     <section class="search-view">
       <header class="search-header">
         <p class="eyebrow">SEARCH</p>
-        <h1>“${escapeHtml(query.trim())}” 的搜索结果</h1>
+        <h1>“${escapeHtml(cleanQuery)}” 的搜索结果</h1>
+        <p>找到 ${matches.length} 篇包含全部关键词的内容</p>
       </header>
       <div class="search-results">
         ${matches.length ? matches.map(noteRow).join("") : `
@@ -1262,7 +1297,14 @@ document.addEventListener("input", (event) => {
   }
 });
 
-elements.searchInput.addEventListener("input", (event) => renderSearch(event.target.value));
+elements.searchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitSearch(elements.searchInput.value);
+});
+elements.searchAlertClose.addEventListener("click", () => elements.searchAlert.close());
+elements.searchAlert.addEventListener("click", (event) => {
+  if (event.target === elements.searchAlert) elements.searchAlert.close();
+});
 document.querySelector("#menuButton").addEventListener("click", openMenu);
 document.querySelector("#closeMenuButton").addEventListener("click", closeMenu);
 elements.scrim.addEventListener("click", closeMenu);

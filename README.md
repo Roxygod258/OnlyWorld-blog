@@ -67,6 +67,20 @@
 localStorage.removeItem("onlyworld-welcome-copy");
 ```
 
+## 修改搜索提示
+
+搜索框输入完成后按 `Enter` 或点击放大镜开始搜索。多个关键词可以用空格隔开，搜索会匹配文章标题、摘要、标签、栏目和正文。
+
+访客只输入空格或标点符号时，网站会显示提示弹窗。要修改弹窗文字，请编辑 `site-content.js`：
+
+```js
+search: {
+  invalidTitle: "请输入有效的搜索关键词",
+  invalidMessage: "搜索内容不能只包含空格或标点符号，请输入至少一个文字或数字关键词。",
+  dismissButton: "我知道了",
+},
+```
+
 ## 添加学习笔记
 
 打开 `site-posts.js`，找到 `notes: [`。复制其中一整段文章对象，粘贴到同一数组中，再修改内容：
