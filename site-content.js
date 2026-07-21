@@ -6,9 +6,9 @@ window.ONLYWORLD_CONTENT = {
     button: "Start",
   },
   search: {
-    invalidTitle: "请输入有效的搜索关键词",
-    invalidMessage: "搜索内容不能只包含空格或标点符号，请输入至少一个文字或数字关键词。",
-    dismissButton: "我知道了",
+    invalidTitle: "《请输入文本》",
+    invalidMessage: "不可发送空白和单个标点符号！真的有好好搜东西么？！@_@'''",
+    dismissButton: "好吧^_^",
   },
   profile: {
       avatar: "assets/Iriyabest.jpg",
