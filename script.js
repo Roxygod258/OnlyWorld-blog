@@ -731,13 +731,15 @@ function submitSearch(query) {
       <header class="search-header">
         <p class="eyebrow">SEARCH</p>
         <h1>“${escapeHtml(cleanQuery)}” 的搜索结果</h1>
-        <p>找到 ${matches.length} 篇包含全部关键词的内容</p>
+        <p>${matches.length
+          ? `找到 ${matches.length} 篇包含全部关键词的内容，这会是你想要的吗？`
+          : "啊噢，找到 0 篇包含全部关键词的内容，你可以试着相信以后我会更的（但愿）"}</p>
       </header>
       <div class="search-results">
         ${matches.length ? matches.map(noteRow).join("") : `
           <div class="empty-state">
-            <strong>没有找到相关笔记</strong>
-            <span>试试更短的关键词</span>
+            <strong>好像什么都没找到呢</strong>
+            <span>要不再试试更短或者其他关键词？</span>
           </div>
         `}
       </div>

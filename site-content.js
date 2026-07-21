@@ -7,8 +7,8 @@ window.ONLYWORLD_CONTENT = {
   },
   search: {
     invalidTitle: "《请输入文本》",
-    invalidMessage: "不可发送空白和单个标点符号！真的有好好搜东西么？！@_@'''",
-    dismissButton: "好吧^_^",
+    invalidMessage: "不可发送空白和单个标点符号！这里什么都没有!",
+    dismissButton: "好吧>_<",
   },
   profile: {
       avatar: "assets/Iriyabest.jpg",
