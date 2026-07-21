@@ -34,29 +34,41 @@ try {
   & git diff --cached --quiet
   $diffExitCode = $LASTEXITCODE
   if ($diffExitCode -eq 0) {
-    Write-Host "No changes found. Skipping commit and push." -ForegroundColor Yellow
-    return
+    Write-Host "No new changes to commit. Checking for commits that still need to be pushed." -ForegroundColor Yellow
   }
-  if ($diffExitCode -ne 1) {
+  elseif ($diffExitCode -eq 1) {
+    Write-Host "=== staged changes ===" -ForegroundColor Cyan
+    & git status --short
+    if ($LASTEXITCODE -ne 0) {
+      throw "Unable to read the staged status."
+    }
+
+    Write-Host "=== git commit ===" -ForegroundColor Cyan
+    & git commit -m $CommitMessage
+    if ($LASTEXITCODE -ne 0) {
+      throw "git commit failed."
+    }
+  }
+  else {
     throw "Unable to inspect the staging area."
   }
 
-  Write-Host "=== staged changes ===" -ForegroundColor Cyan
-  & git status --short
-  if ($LASTEXITCODE -ne 0) {
-    throw "Unable to read the staged status."
-  }
-
-  Write-Host "=== git commit ===" -ForegroundColor Cyan
-  & git commit -m $CommitMessage
-  if ($LASTEXITCODE -ne 0) {
-    throw "git commit failed."
-  }
-
   Write-Host "=== git push origin main ===" -ForegroundColor Cyan
-  & git push origin main
-  if ($LASTEXITCODE -ne 0) {
-    throw "git push failed."
+  $pushSucceeded = $false
+  for ($attempt = 1; $attempt -le 3; $attempt++) {
+    & git push origin main
+    if ($LASTEXITCODE -eq 0) {
+      $pushSucceeded = $true
+      break
+    }
+
+    if ($attempt -lt 3) {
+      Write-Host "Push attempt $attempt failed. Retrying in 3 seconds..." -ForegroundColor Yellow
+      Start-Sleep -Seconds 3
+    }
+  }
+  if (-not $pushSucceeded) {
+    throw "git push failed after 3 attempts. Check the network connection and run the script again."
   }
 
   Write-Host "Publish complete." -ForegroundColor Green
