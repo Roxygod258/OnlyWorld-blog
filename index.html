@@ -121,6 +121,18 @@
     <div class="scrim" id="scrim" hidden></div>
     <audio id="musicAudio" loop preload="metadata"></audio>
 
+    <dialog class="photo-lightbox" id="photoLightbox" aria-label="照片大图">
+      <div class="photo-lightbox-shell">
+        <button class="photo-lightbox-close" id="photoLightboxClose" type="button" aria-label="关闭大图" title="关闭">
+          <span aria-hidden="true">×</span>
+        </button>
+        <img id="photoLightboxImage" alt="" />
+        <div class="photo-lightbox-meta">
+          <strong id="photoLightboxCaption"></strong>
+        </div>
+      </div>
+    </dialog>
+
     <dialog class="settings-dialog welcome-editor" id="welcomeEditorDialog">
       <form method="dialog" id="welcomeEditorForm">
         <header class="dialog-head">

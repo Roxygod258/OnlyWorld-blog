@@ -18,7 +18,17 @@ window.ONLYWORLD_CONTENT = {
     website: "codex大人随手赏赐我的罢了，仅作个人学习和记录~~",
       belief: "Roxy and Iriya are both my dearst beloveds. ♥",
   },
-  photos: [],
+    photos: [
+     {
+            src: "assets/xiaolin.jpg",
+            alt: "小林祝你生日快乐！",
+            caption: "HappyBirthday！",
+            date: "2026-07-21",
+     },
+
+
+
+    ],
   music: {
       title: "蝶に結いた赤い糸",
       artist: "トゲナシトゲアリ",

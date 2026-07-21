@@ -183,6 +183,9 @@ const elements = {
   welcomeTitleInput: document.querySelector("#welcomeTitleInput"),
   welcomeSubtitleInput: document.querySelector("#welcomeSubtitleInput"),
   enterButtonInput: document.querySelector("#enterButtonInput"),
+  photoLightbox: document.querySelector("#photoLightbox"),
+  photoLightboxImage: document.querySelector("#photoLightboxImage"),
+  photoLightboxCaption: document.querySelector("#photoLightboxCaption"),
 };
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
@@ -382,18 +385,58 @@ function renderThoughts() {
   focusContent();
 }
 
-function renderPhotos() {
+function getConfiguredPhotos() {
   const photos = Array.isArray(configuredContent.photos) ? configuredContent.photos : [];
-  const photoItems = photos.map((photo) => {
-    const source = safeAvatarSource(photo.src);
-    if (!source) return "";
-    return `
-      <figure class="photo-item">
-        <img src="${escapeHtml(source)}" alt="${escapeHtml(photo.alt || photo.caption || "个人照片")}" loading="lazy" />
-        <figcaption><span>${escapeHtml(photo.caption || "")}</span><time>${escapeHtml(photo.date || "")}</time></figcaption>
-      </figure>
-    `;
-  }).filter(Boolean).join("");
+  return photos.map((photo) => ({
+    ...photo,
+    source: safeAvatarSource(photo.src),
+  })).filter((photo) => photo.source);
+}
+
+function openPhotoLightbox(photoIndex) {
+  const photo = getConfiguredPhotos()[photoIndex];
+  if (!photo || !elements.photoLightbox) return;
+
+  const description = String(photo.alt || photo.caption || "个人照片");
+  elements.photoLightboxImage.src = photo.source;
+  elements.photoLightboxImage.alt = description;
+  elements.photoLightboxCaption.textContent = String(photo.caption || description);
+  elements.photoLightbox.showModal();
+}
+
+function renderPhotos() {
+  const photos = getConfiguredPhotos();
+  const photoGroups = new Map();
+  photos.forEach((photo, index) => {
+    const date = String(photo.date || "").trim();
+    const groupKey = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "";
+    if (!photoGroups.has(groupKey)) photoGroups.set(groupKey, []);
+    photoGroups.get(groupKey).push({ photo, index });
+  });
+  const photoAlbums = [...photoGroups.entries()]
+    .sort(([leftDate], [rightDate]) => rightDate.localeCompare(leftDate))
+    .map(([date, groupPhotos]) => `
+      <section class="photo-album">
+        <header class="photo-album-head">
+          ${date ? `<time datetime="${date}">${formatDate(date)}</time>` : "<span>未注明日期</span>"}
+          <span>${groupPhotos.length} 张</span>
+        </header>
+        <div class="photo-grid">
+          ${groupPhotos.map(({ photo, index }) => {
+            const description = String(photo.alt || photo.caption || "个人照片");
+            return `
+              <figure class="photo-item">
+                <button class="photo-open" type="button" data-photo-index="${index}" aria-label="查看大图：${escapeHtml(description)}">
+                  <img src="${escapeHtml(photo.source)}" alt="${escapeHtml(description)}" loading="lazy" />
+                  <span class="photo-open-hint" aria-hidden="true">查看大图</span>
+                </button>
+                ${photo.caption ? `<figcaption>${escapeHtml(photo.caption)}</figcaption>` : ""}
+              </figure>
+            `;
+          }).join("")}
+        </div>
+      </section>
+    `).join("");
 
   setActiveRoute("photos");
   renderDirectory();
@@ -406,7 +449,7 @@ function renderPhotos() {
         </div>
         <p>生活、学习与旅途中的片段。</p>
       </header>
-      ${photoItems ? `<div class="photo-grid">${photoItems}</div>` : '<div class="empty-state"><strong>暂无照片</strong><span>照片内容尚未添加</span></div>'}
+      ${photoAlbums || '<div class="empty-state"><strong>暂无照片</strong><span>照片内容尚未添加</span></div>'}
     </section>
   `;
   focusContent();
@@ -1162,6 +1205,11 @@ document.addEventListener("click", (event) => {
     }
     return;
   }
+  const photoButton = event.target.closest("[data-photo-index]");
+  if (photoButton) {
+    openPhotoLightbox(Number(photoButton.dataset.photoIndex));
+    return;
+  }
   const noteButton = event.target.closest("[data-note-id]");
   if (noteButton) {
     renderArticle(noteButton.dataset.noteId);
@@ -1218,6 +1266,13 @@ elements.searchInput.addEventListener("input", (event) => renderSearch(event.tar
 document.querySelector("#menuButton").addEventListener("click", openMenu);
 document.querySelector("#closeMenuButton").addEventListener("click", closeMenu);
 elements.scrim.addEventListener("click", closeMenu);
+document.querySelector("#photoLightboxClose").addEventListener("click", () => elements.photoLightbox.close());
+elements.photoLightbox.addEventListener("click", (event) => {
+  if (event.target === elements.photoLightbox) elements.photoLightbox.close();
+});
+elements.photoLightbox.addEventListener("close", () => {
+  elements.photoLightboxImage.removeAttribute("src");
+});
 
 document.querySelector("#returnWelcomeButton").addEventListener("click", showWelcome);
 document.querySelector("#saveWelcomeCopy").addEventListener("click", saveWelcomeCopy);
