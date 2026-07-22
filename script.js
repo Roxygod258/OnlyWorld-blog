@@ -294,7 +294,7 @@ function getHomeGreeting(date = new Date()) {
   const hour = date.getHours();
 
   if (hour >= 6 && hour < 9) {
-    return ["早上好，", "今天又是充满活力的一天吗？"];
+    return ["早上好，", "今天也是充满活力的一天吗？"];
   }
 
   if (hour >= 9 && hour < 22) {
