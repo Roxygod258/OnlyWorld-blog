@@ -290,16 +290,40 @@ function setActiveRoute(route) {
   });
 }
 
+function getHomeGreeting(date = new Date()) {
+  const hour = date.getHours();
+
+  if (hour >= 6 && hour < 9) {
+    return ["早上好，", "今天又是充满活力的一天吗？"];
+  }
+
+  if (hour >= 9 && hour < 22) {
+    return ["今天有想", "做点什么吗？"];
+  }
+
+  return ["夜深了，", "该睡觉了哦"];
+}
+
+function updateHomeGreeting(date = new Date()) {
+  const primary = document.querySelector("[data-home-greeting-primary]");
+  const emphasis = document.querySelector("[data-home-greeting-emphasis]");
+  if (!primary || !emphasis) return;
+
+  const [primaryText, emphasisText] = getHomeGreeting(date);
+  if (primary.textContent !== primaryText) primary.textContent = primaryText;
+  if (emphasis.textContent !== emphasisText) emphasis.textContent = emphasisText;
+}
+
 function renderHome() {
   setActiveRoute("home");
   renderDirectory();
+  const [greetingPrimary, greetingEmphasis] = getHomeGreeting();
   elements.content.innerHTML = `
     <section class="home-view">
       <div class="home-intro">
         <div>
           <p class="eyebrow">ONLYWORLD / MY LITTLE WORLD</p>
-          <h1>只是在想，<br /><em>有在做些事。</em></h1>
-          <p class="lead">因为记性太差了，所以想在这里写下一些感兴趣的东西</p>
+          <h1><span data-home-greeting-primary>${greetingPrimary}</span><br /><em data-home-greeting-emphasis>${greetingEmphasis}</em></h1>
         </div>
         <div class="focus-panel">
           <span>CURRENT FOCUS</span>
@@ -1006,6 +1030,7 @@ function updateClock() {
   const solarDate = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}`;
   const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   elements.liveClock.textContent = `${solarDate}  ${time}  农历${lunarMonth}${lunarDay}`;
+  updateHomeGreeting(now);
 }
 
 function updateWallpaperParallax(event) {

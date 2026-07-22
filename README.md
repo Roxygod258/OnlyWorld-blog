@@ -126,6 +126,21 @@ kind: "thought",
 
 其他字段与学习笔记相同。保存后，文章会自动显示在杂谈区、侧栏目录、搜索和日期归档中。
 
+## 在文章中添加文件下载
+
+网页不能直接下载文件夹，请先把要分享的文件或文件夹压缩成 ZIP，并放在网站目录中，例如 `Webtools/example.zip`。然后在文章的 `content` 中加入：
+
+```html
+<div class="resource-downloads" aria-label="相关文件下载">
+  <a class="resource-download" href="Webtools/example.zip" download="example.zip">
+    <span class="resource-download-icon" aria-hidden="true">↓</span>
+    <span><strong>获取文件点这里</strong><small>ZIP 文件说明</small></span>
+  </a>
+</div>
+```
+
+GitHub 普通仓库不接受大于 100 MB 的单个文件。较大的文件应上传到 GitHub Releases、网盘或软件官方网站，再把 `href` 改成对应的 HTTPS 下载地址，并删除 `download` 属性。
+
 ## 自定义壁纸
 
 网站页面不再提供壁纸上传按钮。壁纸由你在本地项目中设置，发布后访客只能看到设置好的默认壁纸。

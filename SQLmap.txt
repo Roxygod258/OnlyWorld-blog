@@ -1,0 +1,16 @@
+之前讲了手动探测漏洞，我们其实可以使用sqlmap帮我们寻找漏洞
+github中可自行下载sqlmap，附赠传送门:"https://github.com/sqlmapproject/sqlmap":
+查询指令就是python sqlmap.py -h(这是常用指令，全部指令可以使用-hh)
+常规用法:
+python sqlmap.py -u "URL"
+查询过程中按回车填充默认值跳过问询，也可以在句尾加上 --batch默认填充。
+有漏洞会直接显示，遇到标红CRITICAL则说明没找出来(只是工具没找出来，不代表没有)
+有时候遇到一些类似login.php(登录平台)，我们也可以先抓包，再sqlmap，使其分析数据包上漏洞
+先抓住数据包，在sqlmap文件下创建数据包的txt，再:
+python sqlmap.py -r ./xxx.txt --batch
+更多方法可以自行查看sqlmap手册https://sqlmap.highlight.ink/
+获取所有数据库名:
+python sqlmap.py -u "URL" --dbs --batch
+获取当前网页的数据库名:
+python sqlmap.py -u "URL" --current-db --batch
+剩下的大家找点靶场自己练练，今天只是昨天手操的基础上学习自动脚本

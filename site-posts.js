@@ -13,6 +13,107 @@ window.ONLYWORLD_POSTS = {   /*每次编辑前记得复制模板*/
     },
     */
     {
+      id: "web-sqlmap-basics",
+      title: "SQLMap 入门：从手动探测到自动化验证",
+      date: "2026-07-22",
+      category: "Web",
+      tags: ["SQLMap", "SQL 注入", "自动化工具"],
+      summary: "在理解手动 SQL 注入的基础上，学习 SQLMap 的帮助命令、URL 检测、请求包分析与数据库信息获取。",
+      readTime: "7 分钟",
+      content: `
+        <p>上一篇文章介绍了如何手动判断 SQL 注入、分析闭合方式并观察页面回显。手动探测能帮助我们理解漏洞原理，而今天学习的 SQLMap 可以把大量重复的测试步骤自动化。使用工具时仍要先知道自己在验证什么，不能只看最终是否出现“存在漏洞”的提示。</p>
+        <div class="callout"><strong>使用范围</strong><p>SQLMap 会自动发送大量测试请求，只能用于本地靶场、CTF 或明确授权的目标。未经授权不要对真实网站运行。</p></div>
+
+        <h2>一、获取 SQLMap 与查看帮助</h2>
+        <p>SQLMap 是开源工具，可以从 GitHub 官方仓库下载。进入包含 <code>sqlmap.py</code> 的目录后，通过 Python 运行：</p>
+        <div class="resource-downloads" aria-label="SQLMap 学习资源">
+          <a class="resource-download" href="https://github.com/sqlmapproject/sqlmap" target="_blank" rel="noopener noreferrer">
+            <span class="resource-download-icon" aria-hidden="true">↗</span>
+            <span><strong>获取 SQLMap 点这里</strong><small>前往 sqlmapproject 官方 GitHub 仓库</small></span>
+          </a>
+          <a class="resource-download" href="https://sqlmap.highlight.ink/" target="_blank" rel="noopener noreferrer">
+            <span class="resource-download-icon" aria-hidden="true">↗</span>
+            <span><strong>查看 SQLMap 手册</strong><small>查询参数说明与更多使用方法</small></span>
+          </a>
+        </div>
+        <pre><code># 查看常用参数
+python sqlmap.py -h
+
+# 查看全部参数
+python sqlmap.py -hh</code></pre>
+        <p><code>-h</code> 适合日常快速查询，<code>-hh</code> 会显示更完整的高级选项。第一次接触某个参数时，应先阅读帮助信息，确认它的输入格式和作用。</p>
+
+        <h2>二、使用 URL 检测 GET 参数</h2>
+        <p>最常见的用法是通过 <code>-u</code> 提交一个带参数的 URL。SQLMap 需要知道测试入口，因此 URL 中应包含类似 <code>id=1</code> 的查询参数，而不能只填写网站首页：</p>
+        <pre><code>python sqlmap.py -u "http://127.0.0.1:8080/item.php?id=1"
+
+# 自动选择询问项的默认答案
+python sqlmap.py -u "http://127.0.0.1:8080/item.php?id=1" --batch</code></pre>
+        <p>不加 <code>--batch</code> 时，检测过程中可能出现测试范围、数据库类型或继续方式等问询，可以根据靶场情况选择；按 Enter 通常接受当前问题显示的默认值。加入 <code>--batch</code> 后，SQLMap 会自动使用默认答案，适合已经明确测试条件的重复实验。</p>
+
+        <h2>三、正确阅读检测结果</h2>
+        <p>SQLMap 会先判断目标是否可访问、页面是否稳定，再测试参数是否动态，最后尝试不同类型的注入技术。发现可利用参数时，输出通常会列出参数位置、注入类型、Payload 和后端数据库类型。</p>
+        <div class="article-table-wrap">
+          <table class="article-table">
+            <thead>
+              <tr>
+                <th>输出情况</th>
+                <th>应当如何理解</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>参数可注入</strong></td>
+                <td>记录 SQLMap 给出的参数、注入类型与 Payload，再回到手动方法理解它为何成立。</td>
+              </tr>
+              <tr>
+                <td><strong>未发现注入</strong></td>
+                <td>只说明当前参数、配置和测试范围内没有发现，不等于目标一定不存在漏洞。</td>
+              </tr>
+              <tr>
+                <td><strong>CRITICAL</strong></td>
+                <td>表示本次运行遇到严重错误，例如连接失败、参数无效或请求无法解析。应阅读同一行及前后的具体原因，而不是直接把它理解为“没有漏洞”。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>自动化工具可能受到登录状态、动态 Token、网络波动、WAF、页面不稳定和请求频率限制影响。工具没有找到不代表手动判断一定错误；反过来，工具给出结果后也应保留请求与响应证据。</p>
+
+        <h2>四、使用请求包分析登录与 POST 场景</h2>
+        <p>遇到 <code>login.php</code> 等登录页面时，参数通常位于 POST 正文中，还可能依赖 Cookie、Content-Type 或其他请求头。此时可以先用 Burp Suite 抓取完整请求，把原始 HTTP 请求保存为文本文件，再通过 <code>-r</code> 交给 SQLMap。</p>
+        <pre><code># request.txt 放在 sqlmap.py 所在目录时
+python sqlmap.py -r request.txt --batch
+
+# 文件位于其他目录时，也可以填写相对路径或绝对路径
+python sqlmap.py -r ./requests/login.txt --batch</code></pre>
+        <p>请求文件应从请求行开始，并保留请求头、空行和请求正文。例如 POST 请求中的 Cookie、表单参数和必要的 CSRF Token 都可能影响目标能否正确响应。保存前可以先在 Burp Suite 中重放一次，确认请求仍然有效。</p>
+        <div class="callout"><strong>注意会话有效期</strong><p>如果 Cookie 或 Token 已经过期，SQLMap 读到的只是登录失效页面。开始检测前应重新抓取请求，并确认响应内容与正常操作时一致。</p></div>
+
+        <h2>五、在确认注入后获取数据库信息</h2>
+        <p>只有在已经确认参数存在注入、且授权范围允许时，才继续枚举数据库信息。原文中的两个常用参数分别用于获取全部数据库名和当前数据库名：</p>
+        <pre><code># 枚举数据库服务器中的数据库名
+python sqlmap.py -u "http://127.0.0.1:8080/item.php?id=1" --dbs --batch
+
+# 获取当前 Web 应用正在使用的数据库名
+python sqlmap.py -u "http://127.0.0.1:8080/item.php?id=1" --current-db --batch
+
+# 使用已保存的请求包时，同样可以追加对应参数
+python sqlmap.py -r request.txt --current-db --batch</code></pre>
+        <p><code>--dbs</code> 尝试枚举数据库服务器上可见的数据库，结果受当前数据库账号权限限制；<code>--current-db</code> 只查询当前连接使用的数据库。两者含义不同，练习时不要把“当前数据库”误认为服务器上唯一的数据库。</p>
+
+        <h2>六、从手动探测过渡到自动化</h2>
+        <ol>
+          <li>先在靶场中确认正常请求，理解参数位于 URL、POST 正文还是 Cookie。</li>
+          <li>用昨天的手动方法比较真假条件，尝试理解参数上下文与页面反馈。</li>
+          <li>使用 <code>-u</code> 或 <code>-r</code> 让 SQLMap 对同一入口进行检测。</li>
+          <li>对照 SQLMap 输出的 Payload 与手动判断，分析工具采用了哪种注入方式。</li>
+          <li>确认注入后再使用 <code>--current-db</code> 或 <code>--dbs</code>，不要一开始就堆叠大量枚举参数。</li>
+          <li>保存命令、请求包和关键输出，记录工具成功或失败的原因。</li>
+        </ol>
+        <p>今天的重点是在昨天手动操作的基础上学习自动化脚本。SQLMap 能提高测试效率，但手动基础决定了我们能否正确准备请求、解释输出，并在自动检测失败时找到问题所在。</p>
+      `,
+    },
+    {
       id: "web-sql-injection-basics",
       title: "SQL 注入入门：从靶场搭建到联合查询",
       date: "2026-07-21",
@@ -27,7 +128,7 @@ window.ONLYWORLD_POSTS = {   /*每次编辑前记得复制模板*/
         <h2>一、先搭好可重复的 Docker 靶场</h2>
         <p>Docker 镜像可以理解为创建环境的模板，容器则是由镜像启动的运行实例。导入镜像后，先确认镜像名称和标签，再把容器内的 Web 端口映射到本机端口。</p>
         <pre><code># 从压缩包导入镜像
-docker load -i xxx.tar.gz
+docker load -i xxx.tar.gz  #-i可以用<代替
 
 # 查看本机已有镜像
 docker images
@@ -38,8 +139,8 @@ docker run --rm -d --name sql-lab -p 8080:80 image-name:tag
 # 查看正在运行的容器
 docker ps</code></pre>
         <ul>
-          <li><code>-d</code> 表示后台运行，<code>--name</code> 为容器指定一个便于识别的名称。</li>
-          <li><code>-p 8080:80</code> 的格式是“本机端口:容器端口”，启动后通常访问 <code>http://127.0.0.1:8080</code>。</li>
+          <li><code>-d</code> 表示后台运行，<code>--name</code> 为容器指定一个便于识别的名称。也就是说，"--name sql-lab"可以省略</li>
+          <li><code>-p 8080:80</code> 的格式是“本机端口:容器端口”，启动后通常访问 <code>http://127.0.0.1:8080，如果是虚拟机，就查询本机ip，到本地浏览器之后，ip+端口访问</code>。</li>
           <li><code>--rm</code> 会在容器停止后自动删除容器实例，但不会删除原镜像。</li>
         </ul>
 
@@ -118,12 +219,14 @@ SELECT * FROM users WHERE name = 'admin';</code></pre>
         <h2>五、联合查询的完整步骤</h2>
         <p>联合查询适用于数据能够回显到页面的情况。它要求前后两条查询返回相同数量的列，并且对应列的数据类型可以兼容。下面假设参数处于数字上下文，原查询有三列。</p>
         <ol>
-          <li><strong>确定列数：</strong>依次测试 <code>ORDER BY 1</code>、<code>ORDER BY 2</code>……当数字增加到某个值时报错时，前一个值通常就是列数。</li>
+          <li><strong>确定列数：</strong>依次测试 <code>ORDER BY 1</code>、<code>ORDER BY 2</code>……当数字增加到某个值时报错时，前一个值通常就是列数，即使原页面正常的阈值(有时候会发现报错(也可以是异常)，直接在后面加上-- -注释掉再试试！)</li>
           <li><strong>寻找回显位：</strong>使用不存在的原编号，使原查询尽量不返回数据，再提交 <code>-1 UNION SELECT 1,2,3-- -</code>。页面显示哪个数字，哪个位置就是可利用的回显列。</li>
           <li><strong>读取基础信息：</strong>把可见位置换成 <code>database()</code>、<code>version()</code> 或 <code>current_user()</code>，分别查看当前库名、数据库版本和数据库用户。</li>
           <li><strong>按层级枚举：</strong>先找当前库中的表，再找目标表中的字段，最后读取需要验证的数据。</li>
         </ol>
-        <pre><code># 假设第 2 列能够回显
+        <pre><code>
+        #注:这里要使用插件Hackbar，使用edge的可以去扩展设置里找有从chrome下载
+        # 假设第 2 列能够回显
 -1 UNION SELECT 1,database(),3-- -
 -1 UNION SELECT 1,version(),3-- -
 -1 UNION SELECT 1,current_user(),3-- -</code></pre>
@@ -145,7 +248,7 @@ WHERE table_schema=database()
 # 3. 在授权靶场中读取目标字段，0x3a 表示冒号
 -1 UNION SELECT 1,GROUP_CONCAT(username,0x3a,password),3
 FROM cms_users-- -</code></pre>
-        <p><code>GROUP_CONCAT()</code> 用于把多行结果合并到一个回显位置。原笔记中的 <code>HEX()</code> 与 <code>UNHEX()</code> 可以在字符编码或过滤造成显示问题时辅助转换，但不是枚举表名的必需步骤，初学时先掌握直接查询更容易理解。</p>
+        <p><code>GROUP_CONCAT()</code> 用于把多行结果合并到一个回显位置。原笔记中的 <code>HEX()</code> 与 <code>UNHEX()</code> 可以在字符编码或过滤造成显示问题时辅助转换，比如unhex(hex())，但不是枚举表名的必需步骤，初学时先掌握直接查询更容易理解。</p>
         <p>字段名必须按实际结果填写，例如系统表中使用的是 <code>table_name</code>，不是 <code>tables_name</code>。读取多列时也不能用斜杠连接，因为 SQL 会把斜杠理解为除法；可以像示例一样使用十六进制的冒号 <code>0x3a</code> 分隔用户名和密码字段。</p>
 
         <h2>七、正确理解密码哈希</h2>
@@ -210,7 +313,17 @@ FROM cms_users-- -</code></pre>
         </div>
 
         <h2>二、代理抓包与 HTTP 基础</h2>
-        <p>抓包的重点是让目标程序的流量经过分析工具。Proxifier 可以按程序转发系统流量，Burp Suite 则负责拦截、查看和修改 HTTP 请求。常见链路如下：</p>
+        <p>抓包的重点是让目标程序的流量经过分析工具。Proxifier 可以按程序转发系统流量，Burp Suite 则负责拦截、查看和修改 HTTP 请求。常见链路和获取链接(有些太大本站放不下！)如下：</p>
+        <div class="resource-downloads" aria-label="相关工具下载">
+          <a class="resource-download" href="https://portswigger.net/burp/communitydownload" target="_blank" rel="noopener noreferrer">
+            <span class="resource-download-icon" aria-hidden="true">↗</span>
+            <span><strong>获取 Burp Suite 点这里</strong><small>前往 PortSwigger 官方下载页</small></span>
+          </a>
+          <a class="resource-download" href="Webtools/ProxyBridge.zip" download="ProxyBridge.zip">
+            <span class="resource-download-icon" aria-hidden="true">↓</span>
+            <span><strong>获取 ProxyBridge 点这里</strong><small>下载本站提供的 ZIP 文件 · 约 16.4 MB</small></span>
+          </a>
+        </div>
         <pre><code>目标程序 → Proxifier → Burp Suite（127.0.0.1:8080）→ 目标服务</code></pre>
         <p>没有出现流量时，优先检查程序规则、监听端口，以及 Proxifier、VPN 和系统代理之间是否发生冲突。</p>
         <ul>

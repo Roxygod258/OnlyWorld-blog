@@ -1910,6 +1910,71 @@ button {
   color: inherit;
 }
 
+.resource-downloads {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.resource-download {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(67, 143, 190, 0.24);
+  border-radius: 5px;
+  background: linear-gradient(135deg, rgba(239, 249, 253, 0.94), rgba(255, 248, 250, 0.88));
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.resource-download:hover {
+  border-color: rgba(223, 138, 157, 0.54);
+  box-shadow: 0 10px 24px rgba(56, 119, 155, 0.11);
+  transform: translateY(-2px);
+}
+
+.resource-download:focus-visible {
+  outline: 3px solid rgba(67, 143, 190, 0.24);
+  outline-offset: 2px;
+}
+
+.resource-download-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(67, 143, 190, 0.12);
+  color: var(--accent-deep);
+  font-size: 17px;
+}
+
+.resource-download > span:last-child {
+  min-width: 0;
+}
+
+.resource-download strong,
+.resource-download small {
+  display: block;
+}
+
+.resource-download strong {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.resource-download small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 .callout {
   margin: 28px 0;
   padding: 18px 20px;
@@ -2198,7 +2263,7 @@ button {
 
   .site-shell {
     grid-template-columns: 1fr;
-    grid-template-rows: 104px minmax(0, 1fr);
+    grid-template-rows: 154px minmax(0, 1fr);
     width: 100%;
     height: 100vh;
     height: 100dvh;
@@ -2215,7 +2280,7 @@ button {
     z-index: 10;
     display: grid;
     grid-template-columns: auto auto auto minmax(0, 1fr);
-    grid-template-rows: 58px 44px;
+    grid-template-rows: 58px 44px 50px;
     gap: 0 9px;
     padding: 0 12px 2px;
   }
@@ -2262,21 +2327,28 @@ button {
     display: inline-grid;
   }
 
-  .topbar .brand small,
-  .search-field span {
+  .topbar .brand small {
     display: none;
   }
 
   .topbar-actions {
-    grid-row: 1;
-    grid-column: 4;
-    min-width: 0;
-    justify-self: end;
-    justify-content: flex-end;
+    display: contents;
   }
 
   .search-field {
-    display: none;
+    grid-row: 3;
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 40px;
+    align-self: center;
+    background: rgba(255, 255, 255, 0.76);
+  }
+
+  .topbar-actions > .icon-button {
+    grid-row: 1;
+    grid-column: 4;
+    align-self: center;
+    justify-self: end;
   }
 
   .sidebar {
@@ -2426,6 +2498,10 @@ button {
   }
 
   .photo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .resource-downloads {
     grid-template-columns: 1fr;
   }
 

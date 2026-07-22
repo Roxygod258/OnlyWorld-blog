@@ -1,0 +1,3 @@
+# Keep local tool installations out of the published website repository.
+/Webtools/BurpSuite V2026.3.2/
+/Webtools/ProxyBridge/
